@@ -1,9 +1,3 @@
-<<<<<<< Updated upstream
-# GitHub Governance and Team Controls
-
-
-
-=======
 # 🛡️ GitHub Governance and Team Controls
  
 This document defines the governance rules, branch strategy, and pull request workflow for the **CivicConnect-Application** repository. All team members are required to follow these controls to maintain code quality, accountability, and a stable `main` branch.
@@ -115,4 +109,3 @@ Once feedback has been addressed and both approvals are given, merge the pull re
  
 ### 14. Done ✅
 The change is now committed to the `main` branch.
->>>>>>> Stashed changes
