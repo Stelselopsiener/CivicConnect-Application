@@ -1,0 +1,77 @@
+@import "tailwindcss";
+@import "@fontsource/fraunces/600.css";
+@import "@fontsource/fraunces/700.css";
+@import "@fontsource/ibm-plex-sans/400.css";
+@import "@fontsource/ibm-plex-sans/500.css";
+@import "@fontsource/ibm-plex-sans/600.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+
+/*
+  CivicConnect design tokens.
+  Palette is drawn from municipal/civic signage rather than generic SaaS
+  defaults: a deep civic green for trust/action, warm paper background,
+  amber for pending/attention states, a municipal blue for "resolved",
+  and brick red reserved for urgent/destructive actions.
+*/
+@theme {
+  --font-display: "Fraunces", ui-serif, Georgia, serif;
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --color-paper: #f2f4f1;
+  --color-paper-raised: #ffffff;
+  --color-ink: #142420;
+  --color-ink-soft: #3f4d48;
+  --color-line: #d7ddd6;
+
+  --color-civic-50: #e9f3ee;
+  --color-civic-100: #c9e3d5;
+  --color-civic-300: #6bab8d;
+  --color-civic-500: #1f6f54;
+  --color-civic-600: #185940;
+  --color-civic-700: #123f2e;
+
+  --color-signal-300: #f2cf8b;
+  --color-signal-500: #e2a63a;
+  --color-signal-700: #93650f;
+
+  --color-municipal-300: #a7c7e0;
+  --color-municipal-500: #3e7cb1;
+  --color-municipal-700: #245278;
+
+  --color-brick-300: #e6b3a7;
+  --color-brick-500: #c1442e;
+  --color-brick-700: #862d1c;
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+/* Visible keyboard focus everywhere, styled to match the civic palette
+   rather than relying on the browser default. */
+:focus-visible {
+  outline: 2px solid var(--color-civic-500);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
