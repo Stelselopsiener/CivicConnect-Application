@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CivicConnect Wireframes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --paper:#F6F7F8; --sheet:#FFFFFF; --ink:#1E2328; --ink2:#4A535C; --line:#B9C0C7; --fill:#E6E9EC; --fill2:#D5DAdf;
+  --blue:#1F5FAD; --blueSoft:#E3EDF9; --ok:#2E7D4F; --okSoft:#E2F2E8; --warn:#9A5B00; --warnSoft:#FBEFD9; --bad:#B3261E; --badSoft:#FBE4E2;
+  --focus:#1F5FAD;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Arial,sans-serif; --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  color-scheme:dark; --paper:#15181B; --sheet:#1D2125; --ink:#E6E9EC; --ink2:#AAB3BC; --line:#4A535C; --fill:#2A3036; --fill2:#353C43;
+  --blue:#7FB0EC; --blueSoft:#1C2E45; --ok:#7CCB9A; --okSoft:#17301F; --warn:#E9B25C; --warnSoft:#35280F; --bad:#F2918A; --badSoft:#3A1A18; --focus:#7FB0EC;}}
+:root[data-theme="dark"]{ color-scheme:dark; --paper:#15181B; --sheet:#1D2125; --ink:#E6E9EC; --ink2:#AAB3BC; --line:#4A535C; --fill:#2A3036; --fill2:#353C43;
+  --blue:#7FB0EC; --blueSoft:#1C2E45; --ok:#7CCB9A; --okSoft:#17301F; --warn:#E9B25C; --warnSoft:#35280F; --bad:#F2918A; --badSoft:#3A1A18; --focus:#7FB0EC;}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.45;padding-inline:16px;padding-block:16px 40px}
+.wrap{max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+h1{font-size:22px;margin:0;text-wrap:balance;font-weight:700;letter-spacing:-.01em}
+.sub{color:var(--ink2);margin:2px 0 0;max-width:70ch}
+.bar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:flex-end;justify-content:space-between}
+.nav{display:flex;flex-wrap:wrap;gap:12px}
+.navgroup{display:flex;flex-direction:column;gap:4px}
+.navgroup span{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink2)}
+.navgroup div{display:flex;flex-wrap:wrap;gap:4px}
+.tab{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--sheet);color:var(--ink);padding:5px 10px;border-radius:4px;cursor:pointer}
+.tab[aria-pressed="true"]{background:var(--ink);color:var(--sheet);border-color:var(--ink)}
+.seg{display:flex;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.seg button{font:inherit;font-size:13px;border:0;background:var(--sheet);color:var(--ink);padding:5px 12px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--sheet)}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+
+.stage{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:16px;align-items:start}
+@media (max-width:980px){.stage{grid-template-columns:1fr}}
+.viewport{display:flex;justify-content:center;background:repeating-linear-gradient(45deg,transparent 0 10px,color-mix(in srgb,var(--line) 18%,transparent) 10px 11px);border:1px dashed var(--line);border-radius:6px;padding:14px;overflow-x:auto}
+.frame{container-type:inline-size;width:100%;max-width:1000px;background:var(--sheet);border:2px solid var(--ink);border-radius:6px;overflow:hidden;position:relative}
+.frame.phone{max-width:390px;border-radius:22px;border-width:6px}
+.notes{background:var(--sheet);border:1px solid var(--line);border-radius:6px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.notes h2{font-size:15px;margin:0}
+.notes .req{font-family:var(--mono);font-size:12px;color:var(--blue)}
+.notes ol{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px}
+.notes li{display:grid;grid-template-columns:22px 1fr;gap:8px;font-size:13px}
+.notes li b{font-weight:600}
+.mk{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--blue);color:var(--sheet);font:500 11px var(--mono);flex:none}
+.frame .mk{vertical-align:middle;margin-right:6px;box-shadow:0 0 0 2px var(--sheet);align-self:center;height:20px}
+body.nomk .frame .mk{display:none}
+.legend{font-size:12px;color:var(--ink2);display:flex;gap:6px;align-items:center}
+
+/* ---------- wireframe UI ---------- */
+.app{display:flex;flex-direction:column;min-height:560px}
+.top{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:2px solid var(--ink);position:relative}
+.logo{font-weight:700;letter-spacing:-.01em}
+.logo small{font-weight:400;color:var(--ink2);font-size:12px;margin-left:6px}
+.topnav{display:flex;gap:14px;margin-left:12px}
+.topnav a{color:var(--ink);text-decoration:none;font-size:13px;padding-bottom:2px;border-bottom:2px solid transparent;cursor:pointer}
+.topnav a.on{border-color:var(--ink);font-weight:600}
+.topright{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:13px}
+.bell{position:relative;width:28px;height:28px;border:1px solid var(--line);border-radius:50%;display:grid;place-items:center;font-size:12px}
+.bell i{position:absolute;top:-4px;right:-4px;background:var(--bad);color:#fff;font-style:normal;font-size:10px;border-radius:8px;padding:0 4px}
+.avatar{width:28px;height:28px;border-radius:50%;background:var(--fill2)}
+.role{font-family:var(--mono);font-size:11px;border:1px solid var(--line);padding:1px 6px;border-radius:3px;color:var(--ink2)}
+.burger{display:none;width:28px;height:22px;border-block:3px solid var(--ink);position:relative;margin-left:auto}
+.burger::after{content:"";position:absolute;left:0;right:0;top:6px;border-top:3px solid var(--ink)}
+@container (max-width:560px){ .topnav,.topright .who{display:none} .burger{display:block;margin-left:8px} .topright{margin-left:auto}}
+
+.main{padding:18px 20px;display:flex;flex-direction:column;gap:14px;flex:1;position:relative}
+.crumb{font-size:12px;color:var(--ink2)}
+.crumb a{color:var(--blue);cursor:pointer;text-decoration:underline}
+.h{font-size:20px;font-weight:700;margin:0;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.muted{color:var(--ink2)}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@container (max-width:560px){.grid2,.grid3{grid-template-columns:1fr}}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label{font-weight:600;font-size:13px}
+.field .hint{font-size:12px;color:var(--ink2)}
+.req-star{color:var(--bad)}
+.in{border:1.5px solid var(--ink2);background:var(--sheet);border-radius:4px;padding:8px 10px;min-height:38px;color:var(--ink);font:inherit;width:100%}
+.in.ph{color:var(--ink2)}
+.in.area{min-height:84px}
+.in.err{border-color:var(--bad);border-width:2px}
+.errmsg{color:var(--bad);font-size:12px;display:flex;gap:5px;align-items:flex-start}
+.errmsg::before{content:"!";display:inline-grid;place-items:center;width:15px;height:15px;border-radius:50%;background:var(--bad);color:var(--sheet);font-weight:700;font-size:10px;flex:none;margin-top:1px}
+.errsum{border:2px solid var(--bad);background:var(--badSoft);border-radius:4px;padding:10px 12px;font-size:13px}
+.errsum b{display:block;margin-bottom:4px}
+.errsum a{color:var(--bad);text-decoration:underline;cursor:pointer}
+.sel{position:relative}
+.sel::after{content:"▾";position:absolute;right:10px;top:9px;color:var(--ink2)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1.5px solid var(--ink2);border-radius:18px;padding:5px 11px;font-size:13px;background:var(--sheet);cursor:pointer}
+.chip.on{background:var(--ink);color:var(--sheet);border-color:var(--ink)}
+.btn{font:inherit;font-weight:600;font-size:13px;border:2px solid var(--ink);background:var(--sheet);color:var(--ink);padding:8px 14px;border-radius:4px;cursor:pointer;min-height:38px}
+.btn.pri{background:var(--ink);color:var(--sheet)}
+.btn.dang{border-color:var(--bad);color:var(--bad)}
+.btn.sm{padding:4px 9px;min-height:30px;font-weight:500}
+.link{color:var(--blue);text-decoration:underline;cursor:pointer;font-size:13px}
+.card{border:1.5px solid var(--line);border-radius:6px;padding:12px 14px;background:var(--sheet)}
+.card h3{font-size:14px;margin:0 0 8px}
+.box{background:var(--fill);border-radius:4px}
+
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;border-radius:12px;padding:2px 9px;border:1.5px solid currentColor;white-space:nowrap}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.p-sub{color:var(--ink2)} .p-asg{color:var(--blue)} .p-inp{color:var(--warn)} .p-res{color:var(--ok)} .p-clo{color:var(--ink)} .p-rej{color:var(--bad)}
+.p-over{color:var(--bad);background:var(--badSoft)} .p-over::before{border-radius:0;transform:rotate(45deg);width:6px;height:6px}
+
+table.t{width:100%;border-collapse:collapse;font-size:13px}
+.t th{text-align:left;font-weight:600;border-bottom:2px solid var(--ink);padding:7px 8px;white-space:nowrap}
+.t th.sort::after{content:" ↕";color:var(--ink2)}
+.t th.sorted::after{content:" ↓";color:var(--ink)}
+.t td{border-bottom:1px solid var(--line);padding:8px;vertical-align:top}
+.t tr.click{cursor:pointer} .t tr.click:hover td{background:var(--fill)}
+.t .num{font-family:var(--mono);font-size:12px}
+.tbl{overflow-x:auto}
+.cards-m{display:none;flex-direction:column;gap:8px}
+@container (max-width:560px){ .tbl.collapse{display:none} .cards-m{display:flex} }
+.mcard{border:1.5px solid var(--line);border-radius:6px;padding:10px 12px;display:flex;flex-direction:column;gap:4px;cursor:pointer}
+.mcard .top2{display:flex;justify-content:space-between;gap:8px;align-items:center}
+
+.split{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px}
+@container (max-width:720px){.split{grid-template-columns:1fr}}
+.dl{display:grid;grid-template-columns:110px 1fr;gap:6px 10px;font-size:13px;margin:0}
+.dl dt{color:var(--ink2)} .dl dd{margin:0}
+.timeline{list-style:none;margin:0;padding:0 0 0 14px;border-left:2px solid var(--line);display:flex;flex-direction:column;gap:12px}
+.timeline li{position:relative;font-size:13px}
+.timeline li::before{content:"";position:absolute;left:-21px;top:4px;width:12px;height:12px;border-radius:50%;background:var(--sheet);border:2px solid var(--ink2)}
+.timeline li.now::before{background:var(--ink);border-color:var(--ink)}
+.timeline .when{font-family:var(--mono);font-size:11px;color:var(--ink2)}
+.banner{border-left:5px solid var(--ok);background:var(--okSoft);padding:10px 12px;border-radius:0 4px 4px 0;font-size:13px}
+.banner.info{border-color:var(--blue);background:var(--blueSoft)}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+@container (max-width:720px){.stats{grid-template-columns:repeat(2,1fr)}}
+.stat{border:1.5px solid var(--line);border-radius:6px;padding:10px 12px;cursor:pointer}
+.stat .n{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums}
+.stat .l{font-size:12px;color:var(--ink2)}
+.stat.alert{border-color:var(--bad)} .stat.alert .n{color:var(--bad)}
+.bars{display:flex;flex-direction:column;gap:6px;font-size:12px}
+.bars .b{display:grid;grid-template-columns:120px 1fr 34px;gap:8px;align-items:center}
+.bars .track{height:12px;background:var(--fill);border-radius:2px;overflow:hidden}
+.bars .fillb{height:100%;background:var(--ink2)}
+.bars .v{font-variant-numeric:tabular-nums;text-align:right}
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end}
+.filters .field{flex:1 1 150px}
+.search{flex:2 1 220px}
+.center{display:grid;place-items:center;flex:1;padding:30px 16px}
+.authcard{width:100%;max-width:380px;display:flex;flex-direction:column;gap:12px}
+.tabs2{display:flex;border-bottom:2px solid var(--line)}
+.tabs2 span{padding:8px 14px;font-weight:600;cursor:pointer;margin-bottom:-2px;border-bottom:3px solid transparent}
+.tabs2 span.on{border-color:var(--ink)}
+.tabs2 .mk{flex:none;width:20px;padding:0;margin:auto 6px auto 0;border:0}
+.toast{position:absolute;right:16px;bottom:16px;background:var(--ink);color:var(--sheet);padding:10px 14px;border-radius:4px;font-size:13px;max-width:300px;box-shadow:0 4px 14px rgba(0,0,0,.2)}
+.foot{font-size:12px;color:var(--ink2);border-top:1px solid var(--line);padding:8px 16px}
+.transitions{display:flex;flex-direction:column;gap:6px}
+.opt{display:flex;gap:8px;align-items:center;border:1.5px solid var(--line);border-radius:4px;padding:7px 10px;font-size:13px}
+.opt .dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--ink2);flex:none}
+.opt.on{border-color:var(--ink);border-width:2px} .opt.on .dot{background:var(--ink);border-color:var(--ink);box-shadow:inset 0 0 0 2px var(--sheet)}
+.opt.dis{color:var(--ink2);border-style:dashed}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header class="bar">
+    <div>
+      <h1>CivicConnect wireframes · M2</h1>
+      <p class="sub">Low-fidelity, clickable prototype of the committed scope (S-IN-001 to S-IN-010), aligned to PED v2.0 (REQ IDs, CR-001, CR-002, email confirmation at registration). Rows, buttons and stat tiles link between screens. Blue markers match the notes on the right.</p>
+    </div>
+    <div class="row">
+      <div class="seg" role="group" aria-label="Preview width">
+        <button type="button" id="w-desk" aria-pressed="true">Desktop</button>
+        <button type="button" id="w-phone" aria-pressed="false">Phone 390px</button>
+      </div>
+      <div class="seg" role="group" aria-label="Annotation markers">
+        <button type="button" id="mk-on" aria-pressed="true">Markers on</button>
+        <button type="button" id="mk-off" aria-pressed="false">Off</button>
+      </div>
+    </div>
+  </header>
+  <nav class="nav" id="nav" aria-label="Screens"></nav>
+  <div class="stage">
+    <div class="viewport"><div class="frame" id="frame"></div></div>
+    <aside class="notes" id="notes" aria-live="polite"></aside>
+  </div>
+</div>
+
+<script>
+const S = {}; // screens
+const topbar = (role, active) => {
+  const links = {
+    R:[['r-submit','New request'],['r-list','My requests']],
+    S:[['s-list','Worklist'],['s-detail','Request workspace']],
+    M:[['m-dash','Oversight'],['m-audit','Audit trail'],['s-list','All requests']]
+  }[role];
+  const who = {R:['Thandi M.','Requester'],S:['Pieter v.d. Merwe','Staff · Maintenance'],M:['L. Nkosi','Management']}[role];
+  return `<div class="top"><span class="logo">CivicConnect<small>service requests</small></span>
+  <nav class="topnav">${links.map(([id,t])=>`<a data-go="${id}" class="${id===active?'on':''}">${t}</a>`).join('')}</nav>
+  <div class="topright"><span class="bell" aria-label="Notifications, 2 unread">◔<i>2</i></span><span class="who">${who[0]}</span><span class="role who">${who[1]}</span><span class="avatar"></span></div>
+  <span class="burger" aria-hidden="true"></span></div>`;
+};
+const pill = s => ({Pending:'p-sub',Accepted:'p-asg','In Progress':'p-inp',Completed:'p-res',Closed:'p-clo',Rejected:'p-rej',Cancelled:'p-sub',Overdue:'p-over'}[s]);
+const P = s => `<span class="pill ${pill(s)}">${s}</span>`;
+const mk = n => `<span class="mk" aria-hidden="true">${n}</span>`;
+const authTop = `<div class="top"><span class="logo">CivicConnect<small>service requests</small></span></div>`;
+
+S['login'] = {group:'Access', name:'Create account', req:'REQ-023 · REQ-030 · REQ-033 · D13',
+ html:()=>`<div class="app">${authTop}
+ <div class="center"><div class="authcard">
+  <div class="tabs2">${mk(1)}<span>Sign in</span><span class="on">Create account</span></div>
+  <div class="field"><label>Full name <span class="req-star">*</span></label><div class="in">Thandi Mokoena</div></div>
+  <div class="field"><label>Email address <span class="req-star">*</span></label><div class="in">thandi.m@example.org</div><span class="hint">We will send a confirmation link to this address.</span></div>
+  <div class="field"><label>${mk(2)}Password <span class="req-star">*</span></label><div class="in">••••••••••••</div><span class="hint">At least 8 characters. <span class="link">Show password</span></span></div>
+  <div class="field"><label>Confirm password <span class="req-star">*</span></label><div class="in">••••••••••••</div></div>
+  <button class="btn pri" data-go="check">${mk(3)}Create account</button>
+  <p class="muted" style="margin:0;font-size:12px">Staff and management accounts are created by the administrator.</p>
+ </div></div></div>`,
+ notes:[['One page, two tabs','Sign-in and registration share one page, so a requester never hunts for a separate sign-up link (REQ-023).'],
+  ['Password with show toggle','Passwords are hashed with bcrypt (REQ-030, ASR-003). The field allows paste and password managers, and the toggle reduces typing errors on phones (WCAG 3.3.8).'],
+  ['Account starts unconfirmed','Pressing Create account saves the account and emails a confirmation link. The user cannot sign in until the email is confirmed (D13, CR-004).']]};
+
+S['check'] = {group:'Access', name:'Confirm your email', req:'REQ-023 · REQ-033 · D13',
+ html:()=>`<div class="app">${authTop}
+ <div class="main"><div class="split">
+  <div style="display:flex;flex-direction:column;gap:12px;max-width:420px">
+   <h2 class="h">Check your email</h2>
+   <div class="banner info">${mk(1)}We sent a confirmation link to <b>thandi.m@example.org</b>. Open it to activate your account. The link works once and expires in 24 hours.</div>
+   <div class="row" style="font-size:13px">${mk(2)}<span class="muted">No email after a few minutes? Check your spam folder, or</span><span class="link">send a new confirmation email</span></div>
+   <button class="btn" data-go="signin">Go to sign in</button>
+  </div>
+  <div class="card" style="background:var(--fill)"><h3>${mk(3)}What the email looks like</h3>
+   <div class="card"><p style="margin:0 0 6px;font-size:12px" class="muted">From: CivicConnect &lt;no-reply@…&gt; · Subject: Confirm your CivicConnect account</p>
+   <p style="margin:0 0 8px;font-size:13px">Hi Thandi, please confirm this is your email address to activate your CivicConnect account.</p>
+   <span class="btn pri sm" style="display:inline-block" data-go="signin">Confirm my email</span>
+   <p class="muted" style="margin:8px 0 0;font-size:12px">This link expires in 24 hours. If you did not create an account, ignore this email.</p></div></div>
+ </div></div></div>`,
+ notes:[['Same page for every address','If the address is already registered, the page looks the same and the existing owner gets a warning email instead, so the form cannot reveal who is registered (OWASP).'],
+  ['Recovery is one tap','Resend covers the common failures (spam folder, expired link) without a support call. A new link cancels the old one (R14).'],
+  ['Plain email, one action','The email says why it was sent, has one button and says what to do if you did not register. The button opens a page that confirms on click, so mail scanners cannot use the link up.']]};
+
+S['signin'] = {group:'Access', name:'Sign in', req:'REQ-029 · REQ-030 · D13',
+ html:()=>`<div class="app">${authTop}
+ <div class="center"><div class="authcard">
+  <div class="tabs2"><span class="on">Sign in</span><span data-go="login">Create account</span></div>
+  <div class="errsum" role="alert"><b>${mk(1)}Please confirm your email first</b>We sent a link to thandi.m@example.org when you registered. <a>Send a new confirmation email</a></div>
+  <div class="field"><label>Email address</label><div class="in">thandi.m@example.org</div></div>
+  <div class="field"><label>Password</label><div class="in">••••••••••••</div><span class="hint"><span class="link">Show password</span></span></div>
+  <button class="btn pri" data-go="r-list">Sign in</button>
+  <p class="muted" style="margin:0;font-size:12px">${mk(2)}After sign-in you only see the pages your role allows: Requester → My requests, Staff → Worklist, Management → Oversight.</p>
+ </div></div></div>`,
+ notes:[['Unconfirmed account explained','A correct password on an unconfirmed account gives a clear reason and a resend button (403 EMAIL_NOT_VERIFIED), not a vague error. A wrong password shows a generic "Email or password is incorrect".'],
+  ['Role decides the landing page','Menu items a role cannot use are not rendered at all (REQ-029, ASR-002).']]};
+
+S['r-submit'] = {group:'Requester', name:'Submit request', req:'REQ-001 · REQ-002 · REQ-003 · REQ-027 · REQ-031 · REQ-035',
+ html:()=>`<div class="app">${topbar('R','r-submit')}<div class="main">
+ <div class="crumb"><a data-go="r-list">My requests</a> / New request</div>
+ <h2 class="h">Report a problem</h2>
+ <div class="errsum" role="alert"><b>${mk(1)}2 fields need attention before you can submit</b><a>Choose a category</a> · <a>End date cannot be before the start date</a></div>
+ <div class="field"><label>${mk(2)}What kind of problem is it? <span class="req-star">*</span></label>
+  <div class="chips"><span class="chip">Facility fault</span><span class="chip">Equipment damage</span><span class="chip">Security concern</span><span class="chip">IT support</span><span class="chip">Maintenance</span><span class="chip">Lost property</span><span class="chip">Other</span></div>
+  <span class="errmsg">Choose the category that fits best. Staff can correct it later.</span></div>
+ <div class="field"><label>Short title <span class="req-star">*</span></label><div class="in">Street light out on corner of Oak and 3rd Ave</div><span class="hint">48 / 80 characters</span></div>
+ <div class="field"><label>Describe the problem <span class="req-star">*</span></label><div class="in area">The street light has been off for 4 nights. The corner is very dark and people walk there after the taxi rank closes.</div></div>
+ <div class="field"><label>${mk(3)}Street address <span class="req-star">*</span></label><div class="in">Corner of Oak Ave and 3rd Ave, Midrand</div><span class="hint">A street address or a landmark staff will recognise.</span></div>
+ <div class="grid2">
+  <div class="field"><label>Start date <span class="req-star">*</span></label><div class="in">2026-09-24</div><span class="hint">When the problem started.</span></div>
+  <div class="field"><label>End date</label><div class="in err">2026-09-20</div><span class="errmsg">${mk(4)}End date cannot be before the start date (24 Sep 2026). Leave it empty if the problem is ongoing.</span></div>
+ </div>
+ <div class="row">${mk(5)}<button class="btn pri" data-go="r-detail">Submit request</button><span class="muted" style="font-size:12px">We will contact you at thandi.m@example.org (your account email).</span></div>
+ </div></div>`,
+ notes:[['Error summary at the top','Lists every problem with a link to the field, then each field repeats its own message. Colour is never the only signal: an icon and text are always present (WCAG 2.2 SC 1.4.1, 3.3.1).'],
+  ['Category as visible chips','All seven controlled categories (S-IN-001) are visible at once, so the requester can compare them without opening a dropdown (REQ-003, REQ-027 "understand categories").'],
+  ['One street-address field','Matches CR-001: country, province and city were removed because the platform serves one community (S-OUT-008).'],
+  ['Error says how to fix it','Explains the rule and the fix instead of "Invalid input". The same rule is a CHECK constraint in the database (§12.3), so both layers agree.'],
+  ['No contact-number field','Removed by CR-002; the account email is shown instead so the requester knows how they will be reached. The button is disabled after the first click and the server rejects duplicates (REQ-031, §12.3).']]};
+
+const myRows=[['CC-00142','Street light out on corner of Oak and 3rd Ave','Facility fault','Pending','Today 09:14'],
+ ['CC-00128','Broken tap in community hall kitchen','Maintenance','In Progress','22 Sep'],
+ ['CC-00117','Library Wi-Fi not connecting','IT support','Accepted','18 Sep'],
+ ['CC-00096','Gate lock damaged at sports field','Equipment damage','Completed','03 Sep'],
+ ['CC-00081','Lost blue backpack at clinic','Lost property','Rejected','27 Aug']];
+S['r-list'] = {group:'Requester', name:'My requests', req:'REQ-004 · REQ-005 · REQ-006',
+ html:()=>`<div class="app">${topbar('R','r-list')}<div class="main">
+ <div class="row" style="justify-content:space-between"><h2 class="h">My requests</h2><button class="btn pri" data-go="r-submit">+ New request</button></div>
+ <div class="banner info">${mk(1)}Update on <b>CC-00128</b>: status changed to <b>In Progress</b> by Maintenance · 2 hours ago. <a class="link" data-go="r-detail">View</a></div>
+ <div class="chips">${mk(3)}<span class="chip on">Open (3)</span><span class="chip">Finished (2)</span><span class="chip">All (5)</span></div>
+ <div class="tbl collapse"><table class="t"><thead><tr><th>Reference</th><th>Title</th><th>Category</th><th>${mk(2)}Status</th><th class="sort sorted">Last update</th></tr></thead><tbody>
+ ${myRows.map(r=>`<tr class="click" data-go="r-detail"><td class="num">${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${P(r[3])}</td><td>${r[4]}</td></tr>`).join('')}
+ </tbody></table></div>
+ <div class="cards-m">${myRows.map(r=>`<div class="mcard" data-go="r-detail"><div class="top2"><span class="num" style="font-family:var(--mono);font-size:12px">${r[0]}</span>${P(r[3])}</div><b>${r[1]}</b><span class="muted" style="font-size:12px">${r[2]} · ${r[4]}</span></div>`).join('')}</div>
+ </div></div>`,
+ notes:[['Latest feedback surfaces first','The newest update is shown above the list so the requester sees what changed without opening each request (REQ-006, S-IN-003). It is read from the action table.'],
+  ['Status pill = colour + dot + word','Every status is readable in greyscale and by screen readers. The same labels from the D10 state model are used on every screen (REQ-004).'],
+  ['Open / Finished filter','History of all previous requests stays one tap away without cluttering the default view (REQ-005). On phones the table becomes stacked cards.']]};
+
+S['r-detail'] = {group:'Requester', name:'Request detail', req:'REQ-004 · REQ-005 · REQ-006 · S-IN-002',
+ html:()=>`<div class="app">${topbar('R','r-list')}<div class="main">
+ <div class="crumb"><a data-go="r-list">My requests</a> / CC-00128</div>
+ <h2 class="h">Broken tap in community hall kitchen ${P('In Progress')}</h2>
+ <div class="split"><div style="display:flex;flex-direction:column;gap:14px">
+  <div class="card"><h3>What you reported</h3><dl class="dl"><dt>Category</dt><dd>Maintenance</dd><dt>Street address</dt><dd>Ward 7 community hall, 12 Church St</dd><dt>Start date</dt><dd>22 Sep 2026</dd><dt>Description</dt><dd>The cold tap in the kitchen does not close and water runs all day.</dd></dl></div>
+  <div class="card"><h3>${mk(1)}Progress</h3><ol class="timeline">
+   <li class="now"><span class="when">28 Sep 07:40</span><br><b>In Progress</b>. Plumber booked for Tuesday 30 Sep. Water to the kitchen has been shut off at the valve for now.</li>
+   <li><span class="when">23 Sep 14:10</span><br><b>Accepted</b> by the Maintenance team.</li>
+   <li><span class="when">22 Sep 10:02</span><br><b>Pending</b>. We received your request.</li></ol></div>
+ </div><div style="display:flex;flex-direction:column;gap:14px">
+  <div class="card"><h3>${mk(2)}What happens next</h3><p style="margin:0;font-size:13px">Target date: <b>2 Oct 2026</b>. You will see an update here when the work is done.</p></div>
+  <div class="card"><h3>${mk(3)}Changed your mind?</h3><p style="margin:0 0 8px;font-size:13px">You can cancel while the request is still Pending.</p><button class="btn sm" disabled style="opacity:.55">Cancel request</button><p class="muted" style="font-size:12px;margin:6px 0 0">Not available: work has started.</p></div>
+ </div></div>
+ </div></div>`,
+ notes:[['Timeline written in plain language','Each status change shows who, when and what it means for the requester, read from the same action table staff write to (REQ-004, REQ-006).'],
+  ['Expectation setting','The target date comes from the approved due-date rule (S-IN-010) so the requester knows when to worry.'],
+  ['Unavailable actions explain why','Cancel is shown but disabled with a reason, instead of silently disappearing. Matches the state model: Pending → Cancelled only (D10).']]};
+
+const work=[['CC-00142','Street light out on corner of Oak and 3rd Ave','Maintenance','Oak Ave &amp; 3rd Ave','Pending','—','2 Oct',''],
+ ['CC-00128','Broken tap in community hall kitchen','Maintenance','12 Church St','In Progress','P. v.d. Merwe','2 Oct',''],
+ ['CC-00109','Roof leak above clinic waiting room','Maintenance','4 Clinic Rd','Accepted','S. Dlamini','20 Sep','over'],
+ ['CC-00133','Fence panel down at depot','Maintenance','Depot, Main Rd','Pending','—','30 Sep',''],
+ ['CC-00121','Tap leaking in library toilets','Maintenance','Library, 1 Park Ln','In Progress','P. v.d. Merwe','26 Sep','over']];
+S['s-list'] = {group:'Staff', name:'Worklist', req:'REQ-007 · REQ-008 · REQ-009 · REQ-022',
+ html:()=>`<div class="app">${topbar('S','s-list')}<div class="main">
+ <div class="row" style="justify-content:space-between"><h2 class="h">Worklist <span class="muted" style="font-size:14px;font-weight:400">Maintenance · 5 open</span></h2><span class="chips">${mk(1)}<span class="chip on">Unassigned &amp; mine</span><span class="chip">All in my category</span></span></div>
+ <div class="filters">
+  <div class="field search"><label>${mk(2)}Search</label><div class="in ph">Reference, title or address</div></div>
+  <div class="field"><label>Status</label><div class="in sel">Any open</div></div>
+  <div class="field"><label>Due</label><div class="in sel">Overdue first</div></div>
+  <button class="btn">Apply filters</button><span class="link">Clear</span>
+ </div>
+ <div class="tbl collapse"><table class="t"><thead><tr><th class="sort">${mk(4)}Ref</th><th>Title</th><th>Street address</th><th class="sort">Status</th><th>Owner</th><th class="sort sorted">${mk(3)}Due</th></tr></thead><tbody>
+ ${work.slice().sort((a,b)=>(b[7]?1:0)-(a[7]?1:0)).map(r=>`<tr class="click" data-go="s-detail"><td class="num">${r[0]}</td><td>${r[1]}</td><td>${r[3]}</td><td>${P(r[4])}</td><td>${r[5]}</td><td>${r[7]?P('Overdue')+' ':''}${r[6]}</td></tr>`).join('')}
+ </tbody></table></div>
+ <div class="cards-m">${work.map(r=>`<div class="mcard" data-go="s-detail"><div class="top2"><span style="font-family:var(--mono);font-size:12px">${r[0]}</span>${r[7]?P('Overdue'):P(r[4])}</div><b>${r[1]}</b><span class="muted" style="font-size:12px">${r[3]} · due ${r[6]}</span></div>`).join('')}</div>
+ </div></div>`,
+ notes:[['Scoped by role and category','Staff only see requests in their own category, stored as user.category (REQ-007, REQ-029, §8.1). The default view is "unassigned and mine", which is the triage queue.'],
+  ['Search, filter, sort in one row','Filters apply on the button as REQ-008 states; sortable column headers show ↕ and the active sort shows ↓.'],
+  ['Overdue sorts to the top','Overdue is derived and shown as its own pill beside the date, so it never hides the real status (REQ-022, D10).'],
+  ['Whole row is the link','Large click target opens the request workspace (REQ-009). Rows are keyboard-focusable in the build.']]};
+
+S['s-detail'] = {group:'Staff', name:'Request workspace', req:'REQ-009 – REQ-017 · REQ-021 · REQ-024',
+ html:()=>`<div class="app">${topbar('S','s-detail')}<div class="main">
+ <div class="crumb"><a data-go="s-list">Worklist</a> / CC-00142</div>
+ <h2 class="h">Street light out on corner of Oak and 3rd Ave ${P('Pending')}</h2>
+ <div class="split"><div style="display:flex;flex-direction:column;gap:14px">
+  <div class="card"><h3>Request details</h3><dl class="dl"><dt>Requester</dt><dd>Thandi M. · thandi.m@example.org</dd><dt>Category</dt><dd>Facility fault ${mk(4)}<span class="link">Change</span></dd><dt>Street address</dt><dd>Corner of Oak Ave and 3rd Ave, Midrand</dd><dt>Dates</dt><dd>Started 24 Sep 2026 · ongoing</dd><dt>Due</dt><dd>2 Oct 2026</dd><dt>Description</dt><dd>The street light has been off for 4 nights. The corner is very dark…</dd></dl></div>
+  <div class="card"><h3>Record an action</h3>
+   <div class="field"><label>${mk(3)}Comment visible to requester <span class="req-star">*</span></label><div class="in area ph">What was done or what happens next</div></div>
+   <div class="grid2" style="margin-top:8px"><div class="field"><label>Action date</label><div class="in">2026-09-28</div></div><div class="field"><label>Finish date</label><div class="in ph">When resolved</div></div></div>
+  </div>
+  <div class="card"><h3>History</h3><ol class="timeline"><li class="now"><span class="when">28 Sep 09:14 · system</span><br>Submitted by Thandi M. Status Pending.</li></ol></div>
+ </div><div style="display:flex;flex-direction:column;gap:14px">
+  <div class="card"><h3>${mk(1)}Ownership</h3><p style="margin:0 0 8px;font-size:13px">Unassigned</p>
+   <div class="row"><button class="btn pri sm" data-toast="You now own CC-00142. Status changed to Accepted.">Accept myself</button></div>
+   <div class="field" style="margin-top:10px"><label>Or assign to</label><div class="in sel">Choose staff in Facility fault…</div><span class="hint">Only staff whose category matches are listed</span></div>
+  </div>
+  <div class="card"><h3>${mk(2)}Change status</h3><div class="transitions">
+   <div class="opt on"><span class="dot"></span>Accepted</div>
+   <div class="opt"><span class="dot"></span>Rejected <span class="muted" style="font-size:12px">· reason required</span></div>
+   <div class="opt dis"><span class="dot"></span>Completed <span style="font-size:12px">· not allowed from Pending</span></div></div>
+   <button class="btn pri" style="margin-top:10px;width:100%" data-toast="Saved. The requester can see this update now.">Save status &amp; comment</button></div>
+ </div></div>
+ </div></div>`,
+ notes:[['Ownership first','Accept-myself (REQ-012) and assign-to (REQ-010, REQ-011) sit at the top right because triage is the first job on a new request. The staff list is filtered to the request\'s category.'],
+  ['Only valid transitions are offered','Options come from the D10 state model; invalid moves are shown disabled with the reason. The server enforces the same rule and returns 409 if bypassed (REQ-013, REQ-016, REQ-017, §12.4).'],
+  ['Fields match the action record','Comment, action date and finish date map to the PATCH /status body in §12.2 and the action table (REQ-014, REQ-015). The comment is what the requester sees.'],
+  ['Category correction in place','"Change" next to the category supports REQ-024 and appends an action row like any other change (REQ-021).']]};
+
+S['m-dash'] = {group:'Management', name:'Oversight dashboard', req:'REQ-018 · REQ-019 · REQ-020 · REQ-022 · ASR-009',
+ html:()=>`<div class="app">${topbar('M','m-dash')}<div class="main">
+ <div class="row" style="justify-content:space-between"><h2 class="h">Service overview</h2>
+  <div class="filters"><div class="field" style="flex:0 1 150px"><label>From</label><div class="in">2026-09-01</div></div><div class="field" style="flex:0 1 150px"><label>To</label><div class="in">2026-09-28</div></div><button class="btn">Apply</button></div></div>
+ ${mk(1)}<div class="stats">
+  <div class="stat" data-go="s-list"><div class="n">37</div><div class="l">Open</div></div>
+  <div class="stat alert" data-go="s-list"><div class="n">6</div><div class="l">${mk(2)}Overdue</div></div>
+  <div class="stat" data-go="s-list"><div class="n">52</div><div class="l">Resolved (Completed)</div></div>
+  <div class="stat" data-go="s-list"><div class="n">48</div><div class="l">Closed</div></div>
+  <div class="stat"><div class="n">3.4 d</div><div class="l">Median time to complete</div></div>
+ </div>
+ <div class="grid2">
+  <div class="card"><h3>Open requests by category</h3><div class="bars">
+   ${[['Maintenance',14],['Facility fault',9],['IT support',6],['Security concern',4],['Equipment damage',3],['Lost property',1],['Other',0]].map(([k,v])=>`<div class="b"><span>${k}</span><span class="track"><span class="fillb" style="display:block;width:${v/14*100}%"></span></span><span class="v">${v}</span></div>`).join('')}
+  </div></div>
+  <div class="card"><h3>${mk(3)}Overdue by category</h3><table class="t"><thead><tr><th>Category</th><th>Overdue</th><th>Oldest</th></tr></thead><tbody>
+   <tr class="click" data-go="s-list"><td>Maintenance</td><td class="num">4</td><td>8 days</td></tr><tr class="click" data-go="s-list"><td>IT support</td><td class="num">1</td><td>2 days</td></tr><tr class="click" data-go="s-list"><td>Security concern</td><td class="num">1</td><td>1 day</td></tr></tbody></table>
+   <p class="muted" style="font-size:12px;margin:8px 0 0">Counts only. Requester names are not shown on this page.</p></div>
+ </div>
+ </div></div>`,
+ notes:[['Summary before detail','The four counts named in the brief and REQ-022 (open, overdue, resolved, closed) come first; every tile links to the filtered list (REQ-018, REQ-022). Served by GET /api/v1/admin/overview.'],
+  ['Overdue marked by form, not only colour','Border, number colour and the label all change, so the tile stands out in greyscale print too.'],
+  ['Aggregates, not personal data','Oversight shows counts by category. Individual requests open only on click-through, applying least privilege (PED §2.4, CON-SEC-04, ASR-002).']]};
+
+S['m-audit'] = {group:'Management', name:'Audit trail', req:'REQ-021 · REQ-029 · ASR-009',
+ html:()=>`<div class="app">${topbar('M','m-audit')}<div class="main">
+ <h2 class="h">Audit trail</h2>
+ <div class="filters"><div class="field search"><label>Request or staff member</label><div class="in ph">e.g. CC-00121 or P. v.d. Merwe</div></div><div class="field"><label>Action</label><div class="in sel">All actions</div></div><div class="field"><label>Date</label><div class="in sel">Last 7 days</div></div><button class="btn">Apply</button></div>
+ <div class="tbl"><table class="t"><thead><tr><th class="sort sorted">${mk(1)}When</th><th>Request</th><th>Staff member</th><th>Action</th><th>Previous → New</th></tr></thead><tbody>
+  <tr><td class="num">28 Sep 07:40</td><td class="num">CC-00128</td><td>P. v.d. Merwe</td><td>Status change</td><td>Accepted → In Progress</td></tr>
+  <tr><td class="num">27 Sep 16:02</td><td class="num">CC-00121</td><td>P. v.d. Merwe</td><td>Comment added</td><td>—</td></tr>
+  <tr><td class="num">26 Sep 11:30</td><td class="num">CC-00133</td><td>S. Dlamini</td><td>Category corrected</td><td>Facility fault → Maintenance</td></tr>
+  <tr><td class="num">25 Sep 09:12</td><td class="num">CC-00109</td><td>S. Dlamini</td><td>Assigned</td><td>Pending → Accepted</td></tr>
+  <tr><td class="num">24 Sep 13:47</td><td class="num">CC-00081</td><td>J. Botha</td><td>Status change</td><td>Pending → Rejected</td></tr>
+ </tbody></table></div>
+ <p class="muted" style="font-size:12px;margin:0">${mk(2)}Read-only. Entries cannot be edited or deleted from any screen.</p>
+ </div></div>`,
+ notes:[['Who · what · when · previous → new','Every row is one action record (ActionType, StaffID, PreviousStatus, NewStatus, Timestamp), answering the brief\'s "weak accountability" problem (REQ-021, S-IN-006).'],
+  ['Read-only by design','No edit or delete controls exist. The action table is append-only (§8.3) and served by GET /api/v1/admin/audit.']]};
+
+const order=['login','check','signin','r-submit','r-list','r-detail','s-list','s-detail','m-dash','m-audit'];
+let cur='r-submit';
+const nav=document.getElementById('nav'), frame=document.getElementById('frame'), notes=document.getElementById('notes');
+function buildNav(){
+  const groups={}; order.forEach(id=>{(groups[S[id].group]??=[]).push(id)});
+  nav.innerHTML=Object.entries(groups).map(([g,ids])=>`<div class="navgroup"><span>${g}</span><div>${ids.map(id=>`<button type="button" class="tab" data-go="${id}" aria-pressed="${id===cur}">${S[id].name}</button>`).join('')}</div></div>`).join('');
+}
+function go(id){ if(!S[id]) return; cur=id; const s=S[id];
+  frame.innerHTML=s.html();
+  notes.innerHTML=`<h2>${s.name}</h2><div class="req">${s.req}</div><ol>${s.notes.map((n,i)=>`<li><span class="mk">${i+1}</span><span><b>${n[0]}.</b> ${n[1]}</span></li>`).join('')}</ol><p class="legend">Markers are placed near the element each note describes. Example data only.</p>`;
+  buildNav(); try{history.replaceState(null,'','#'+id)}catch(e){}
+}
+window.__go=go;
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-go]'); if(t){e.preventDefault();go(t.dataset.go);return;}
+  const q=e.target.closest('[data-toast]'); if(q){const old=frame.querySelector('.toast'); old&&old.remove(); const d=document.createElement('div'); d.className='toast'; d.setAttribute('role','status'); d.textContent=q.dataset.toast; frame.querySelector('.main').appendChild(d); setTimeout(()=>d.remove(),3500);}
+  const c=e.target.closest('.chip'); if(c&&!c.dataset.go){c.parentElement.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');}
+});
+const setPress=(a,b,on)=>{a.setAttribute('aria-pressed',on);b.setAttribute('aria-pressed',!on)};
+const wd=document.getElementById('w-desk'), wp=document.getElementById('w-phone');
+wd.onclick=()=>{frame.classList.remove('phone');setPress(wd,wp,true)};
+wp.onclick=()=>{frame.classList.add('phone');setPress(wd,wp,false)};
+const m1=document.getElementById('mk-on'), m0=document.getElementById('mk-off');
+m1.onclick=()=>{document.body.classList.remove('nomk');setPress(m1,m0,true)};
+m0.onclick=()=>{document.body.classList.add('nomk');setPress(m1,m0,false)};
+window.__phone=on=>{(on?wp:wd).click()};
+const h=(location.hash||'').slice(1); go(S[h]?h:'r-submit');
+</script>
+
+</body>
+</html>
