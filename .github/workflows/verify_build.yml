@@ -21,6 +21,6 @@ jobs:
 
       - name: Install Dependencies and Build
         run: |
-          cd civicconnect-frontend
+          cd src/frontend
           npm ci
           npm run build
