@@ -1,21 +1,23 @@
-import { resetMockData } from '../../services/mock/mockStore'
+import { isDemoMode } from '../../services'
+import { resetDb } from '../../services/mock/mockDb'
+import { clearToken } from '../../services/session'
 
-const USE_MOCK = import.meta.env.VITE_USE_MOCK_API === 'true'
-
+/** Makes it impossible to mistake demo data for the real system. Hidden when the API is live. */
 export default function DemoModeBanner() {
-  if (!USE_MOCK) return null
+  if (!isDemoMode) return null
 
-  const handleReset = () => {
-    resetMockData()
-    window.location.href = '/'
+  const reset = () => {
+    resetDb()
+    clearToken()
+    window.location.assign('/sign-in')
   }
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-signal-500/40 bg-signal-300/30 px-4 py-2 text-xs text-signal-700">
+    <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-signal-100 px-4 py-1.5 text-center text-sm text-signal-800">
       <span>
-        Demo mode — no backend connected. Data is stored locally in your browser and isn't shared with anyone else.
+        <strong className="font-semibold">Demo data.</strong> Nothing here is sent to a server; it is stored in this browser only.
       </span>
-      <button onClick={handleReset} className="font-medium underline underline-offset-2 hover:no-underline">
+      <button type="button" onClick={reset} className="cursor-pointer font-semibold underline underline-offset-2 hover:no-underline">
         Reset demo data
       </button>
     </div>
