@@ -1,21 +1,19 @@
-import { Link, Outlet } from 'react-router-dom'
+import { Outlet } from 'react-router-dom'
+import { Wordmark } from './TopBar'
 import DemoModeBanner from '../common/DemoModeBanner'
 
 export default function PublicShell() {
   return (
-    <div className="flex min-h-screen flex-col bg-paper">
+    <div className="flex min-h-screen flex-col">
       <DemoModeBanner />
-      <header className="border-b border-line px-8 py-5">
-        <Link to="/" className="font-display text-xl font-semibold text-civic-700">
-          CivicConnect
-        </Link>
+      <header className="on-ink bg-ink">
+        <div className="mx-auto flex h-16 max-w-6xl items-center px-4 sm:px-6">
+          <Wordmark to="/sign-in" />
+        </div>
       </header>
-      <main className="flex flex-1 items-center justify-center px-4 py-12">
+      <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-4 py-10 sm:px-6 sm:py-14">
         <Outlet />
       </main>
-      <footer className="border-t border-line px-8 py-4 text-center text-xs text-ink-soft">
-        CivicConnect — a community issue reporting platform. SEN381 project build.
-      </footer>
     </div>
   )
 }

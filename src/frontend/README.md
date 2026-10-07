@@ -1,168 +1,150 @@
-# CivicConnect — Frontend
+# CivicConnect frontend
 
-React frontend for CivicConnect, a community civic-issue reporting and
-tracking platform. This is the frontend tier of the PERN stack
-(PostgreSQL, Express, React, Node.js) selected in PED v2.0 §5.5.
+React single-page app for CivicConnect, the community service-request platform (SEN381, Milestone 3). It implements the screens wireframed in PED v2.0 §10 against the API contract in PED §12.2.
 
-## Current implementation status (M2)
+Design patterns and where to find them: **[DESIGN_PATTERNS.md](DESIGN_PATTERNS.md)**.
 
-This is the **initial design baseline** for the frontend, not a finished
-application. It is built against an assumed backend contract (see
-`src/services/`) so backend development can proceed in parallel. What's
-implemented:
-
-- Application shell: public pages (landing, login, register) and an
-  authenticated sidebar dashboard shell.
-- Auth flow: register, login, session persistence, and route guarding by
-  role (`resident`, `staff`, `admin`), via `AuthContext` + `ProtectedRoute`.
-- Core domain flow: browse issues, filter by status, report a new issue,
-  view an issue's detail with comments and upvoting, and a staff/admin
-  triage dashboard grouped by status queue.
-- A single, documented API boundary (`src/services/apiClient.js`) so the
-  whole app talks to the Express API through one configurable client.
-
-**Not yet implemented / deferred** (see Forward Engineering
-Considerations in the PED): pagination controls beyond page size,
-image/attachment upload on reports, notifications, and map-based issue
-display. These are recorded as deferred decisions, not missing work.
-
-## Prerequisites
-
-- Node.js 20+ and npm 10+
-- The CivicConnect Express API running locally — **not required yet**, see
-  Mock mode below.
-
-## Setup
+## Run it
 
 ```bash
 npm install
-cp .env.example .env
+cp .env.example .env     # Windows: copy .env.example .env
+npm run dev              # http://localhost:5173
 ```
 
-Edit `.env` if your backend runs somewhere other than
-`http://localhost:5000`.
+| Command | Does |
+|---|---|
+| `npm run dev` | Development server with hot reload |
+| `npm run build` | Production build into `dist/` |
+| `npm run preview` | Serves the production build locally |
+| `npm run lint` | Static analysis (oxlint) |
+| `npm test` | 84 unit and service-layer tests (Vitest) |
 
-## Mock mode — running without a backend
+Requires Node.js 20 or newer.
 
-Until the Express/PostgreSQL backend exists, the app runs fully in the
-browser against seeded, localStorage-backed data. This is controlled by
-one flag:
+## Demo mode and live mode
 
+`VITE_USE_MOCK_API` selects the data source. Pages are identical in both modes.
+
+| Value | Data source | Use for |
+|---|---|---|
+| `true` (default) | In-browser demo API with seeded data, stored in `localStorage` | Demonstrations and frontend work without a backend. An amber banner makes the mode obvious. |
+| `false` | Express API at `VITE_API_BASE_URL` (default `/api/v1`) | Integration with the real backend |
+
+Demo accounts (password `Demo-pass-2026`, also one click from the sign-in page):
+
+| Account | Role |
+|---|---|
+| thandi.m@example.org | Requester |
+| pieter.vdm@civicconnect.example | Staff, Maintenance |
+| lindiwe.n@civicconnect.example | Management |
+
+The demo API enforces the same rules the PED gives the server (role and category scoping, D10 transitions with 409, duplicate detection, email confirmation before first sign-in). It is a stand-in: it is not evidence that the real API behaves that way.
+
+## Backend integration status
+
+**The backend in this repository does not yet serve this frontend.** At the time of writing `src/backend` exposes one route, `GET /api/requests`, with no authentication. Live mode needs the endpoints below under `/api/v1`. Until they exist, run demo mode.
+
+| Endpoint | Used by | In PED §12.2 |
+|---|---|---|
+| `POST /auth/register`, `POST /auth/login` | Sign in, Create account | Yes |
+| `POST /auth/verify-email`, `POST /auth/resend-verification` | Confirm email | §11.3 (D13) |
+| `POST /requests`, `GET /requests/my` | Submit, My requests | Yes |
+| `GET /requests/:id` | Request detail, workspace | **No: contract gap** (needed for REQ-009) |
+| `GET /staff/requests`, `GET /staff/members` | Worklist, assign list | Yes |
+| `PATCH /requests/:id/assign`, `/category`, `/status` | Workspace | Yes |
+| `GET /admin/overview`, `GET /admin/audit` | Oversight, Audit trail | Yes |
+| `GET /admin/requests` | All requests (management) | **No: contract gap** (wireframed screen) |
+
+JSON shapes the frontend expects (all tolerant of missing optional fields; see `src/services/adapters/`):
+
+```jsonc
+// POST /auth/login -> 200
+{ "token": "<JWT with userId, user_type, category, exp>", "user": { "user_id": 10, "name": "…", "email": "…", "user_type": "staff", "category": "Maintenance" } }
+
+// a request, wherever one is returned (lists may be a bare array or { "requests": [...] })
+{ "service_request_id": 128, "requester_id": 1, "staff_id": 10, "title": "…", "description": "…",
+  "street_address": "…", "start_date": "2026-09-29", "end_date": null, "category": "Maintenance",
+  "status": "In Progress", "created_at": "2026-09-30T08:10:00Z",
+  "requester": { "user_id": 1, "name": "…", "email": "…" }, "staff": { "user_id": 10, "name": "…" },
+  "actions": [ { "action_id": 501, "service_request_id": 128, "staff_id": 10, "staff_name": "…",
+                 "previous_status": "Accepted", "new_status": "In Progress", "date": "…", "comment": "…", "action_type": "Status change" } ] }
+
+// GET /admin/overview -> 200
+{ "counts": { "open": 11, "overdue": 5, "resolved": 4, "closed": 2 }, "median_days_to_complete": 4.5,
+  "open_by_category": [ { "category": "Maintenance", "count": 4 } ],
+  "overdue_by_category": [ { "category": "Maintenance", "count": 2, "oldest_days": 9 } ] }
+
+// any failure (PED §12.4)
+{ "error": { "code": "INVALID_TRANSITION", "message": "…", "details": [ { "field": "end_date", "message": "…" } ] } }
 ```
-VITE_USE_MOCK_API=true   # in .env
-```
 
-With this set, `npm run dev` gives you a completely clickable app —
-register or log in with a demo account (shown on the login page),
-report an issue, browse/filter issues, comment, upvote, and (as
-`staff`/`admin`) move issues through status queues. A banner at the top
-of the app makes it clear when you're in mock mode, with a **Reset demo
-data** link to restore the seed dataset.
+Error codes the UI treats specially: `EMAIL_NOT_VERIFIED` (403, offers resend), `INVALID_CREDENTIALS` (401), `DUPLICATE_REQUEST` (409, `details[0].message` = existing request id), `INVALID_TRANSITION` (409).
 
-Demo accounts (also listed in `src/services/mock/mockStore.js`):
+In development Vite proxies `/api/*` to `VITE_API_PROXY_TARGET` (default `http://localhost:5000`), so no CORS setup is needed.
 
-| Email                  | Password      | Role     |
-|-------------------------|--------------|----------|
-| resident@example.com   | password123   | resident |
-| staff@example.com      | password123   | staff    |
-| admin@example.com      | password123   | admin    |
+## Screens
 
-**Switching to the real backend:** once Express is ready, set
-`VITE_USE_MOCK_API=false` in `.env` — no other code changes needed.
-`authService.js` and `issueService.js` are the only files that branch on
-this flag; every page and component calls them the same way regardless.
-When you're confident the real backend is final, the `src/services/mock/`
-folder and the `USE_MOCK` branches can be deleted entirely.
+| Zone (PED §10.1) | Route | Screen | Requirements |
+|---|---|---|---|
+| Public | `/sign-in`, `/register` | Sign in / Create account (one page, two tabs) | REQ-023, REQ-029, REQ-030 |
+| Public | `/check-email`, `/verify-email` | Email confirmation | REQ-033, D13, CR-004 |
+| Requester | `/requests` | My requests | REQ-004 to REQ-006 |
+| Requester | `/requests/new` | Report a problem | REQ-001 to REQ-003, REQ-031, REQ-035 |
+| All roles | `/requests/:id` | Requester detail, staff workspace, or read-only for management | REQ-004, REQ-009 to REQ-017, REQ-024 |
+| Staff | `/worklist` | Worklist | REQ-007, REQ-008 |
+| Management | `/oversight` | Service overview | REQ-018 to REQ-020, REQ-022 |
+| Management | `/audit` | Audit trail | REQ-021 |
+| Management | `/all-requests` | All requests (read-only) | REQ-019, REQ-022 |
 
-## Running locally
-
-```bash
-npm run dev
-```
-
-The dev server runs at `http://localhost:5173`. Requests to `/api/*` are
-proxied to the Express backend (configured via `VITE_API_PROXY_TARGET`
-in `vite.config.js`), so components can call relative paths like
-`apiClient.get('/issues')` without CORS configuration in development.
-
-## Building for production
-
-```bash
-npm run build   # outputs to dist/
-npm run preview # serve the production build locally
-```
-
-## Project structure
+## Structure
 
 ```
 src/
-  components/
-    common/     Generic UI primitives (Button, FormField, ErrorBanner,
-                DemoModeBanner, ...)
-    layout/     App shells (PublicShell, AppShell, Sidebar)
-    issues/     Domain components for the Issue aggregate (IssueCard,
-                StatusBadge, CommentThread)
-  context/      AuthContext — session state shared across the app
-  hooks/        useAuth, useAsync (shared data-fetching helper)
-  pages/        One file per route (Landing, Login, Dashboard, IssueList,
-                IssueDetail, ReportIssue, AdminDashboard, NotFound)
-  routes/       ProtectedRoute — auth/role route guarding
-  services/     apiClient.js (the ONLY place axios is configured),
-                authService.js, issueService.js — the documented API
-                contract this frontend expects from Express
-    mock/       Mock implementations used when VITE_USE_MOCK_API=true
-                (mockStore.js, mockAuthService.js, mockIssueService.js) —
-                delete this folder once the real backend is in use
-  index.css     Design tokens (Tailwind v4 @theme) and global styles
+  config/        env.js: the only reader of environment variables
+  domain/        Pure business rules, no React or HTTP: lifecycle (State), validation and
+                 sorting (Strategy), categories, derived facts, navigation. Unit-tested.
+  services/      index.js (composition root), gateways, adapters, AppError, session,
+    http/          axios facade
+    mock/          demo database and demo API
+    events/        event bus (Observer) and gateway decorator
+  context/       AuthProvider
+  hooks/         useAuth, useAsync, useEventBus, useNotifications, useSort
+  routes/        ProtectedRoute
+  components/    common/ (Button, Field, Banner, ...), layout/ (TopBar, shells), requests/
+  pages/         auth/, requester/, staff/, management/
+  utils/         format.js
 ```
 
-This structure maps directly to the layered/component architecture
-recorded in the PED: `pages` are the presentation layer, `components`
-are reusable UI, `services` are the integration boundary to the
-Express API, and `context`/`hooks` hold cross-cutting application
-state. See `ADR-002` (frontend architecture) and `ADR-004`
-(API client boundary) in the PED for the reasoning behind this split.
+Dependency direction: `pages → components / hooks → services → domain`. `domain/` imports nothing from the other folders.
 
-## Expected backend API contract
+## Changes from the M2 frontend baseline
 
-The frontend does not hit any hardcoded backend detail outside of
-`src/services/`. Two files describe every endpoint currently expected:
+The M2 prototype modelled "civic issues" (potholes, upvotes, roles resident/staff/admin, statuses reported/in_review/…). That did not match the PED, so M3 realigns the frontend with the approved baseline. Record these in the PED v3.0 controlled-changes section.
 
-- `src/services/authService.js` — `/api/auth/register`, `/api/auth/login`,
-  `/api/auth/me`
-- `src/services/issueService.js` — `/api/issues` (list/create),
-  `/api/issues/:id` (detail), `/api/issues/:id/status` (staff-only
-  update), `/api/issues/:id/comments`, `/api/issues/:id/upvote`
+| M2 prototype | M3 | Reason |
+|---|---|---|
+| Issues with upvotes and public comments | Service requests with an action timeline | PED §8 data model; upvotes were never in scope |
+| Roles resident / staff / admin | `user_type` requester / staff / management | PED §8.1 |
+| Four ad-hoc statuses | Seven D10 statuses with enforced transitions | D10 |
+| Sidebar layout | Top navigation built per role | Wireframes, PED §10 |
+| Register signs the user straight in | Email confirmation before first sign-in | D13, CR-004 |
+| `/api/issues`, `/api/auth/me` | PED §12.2 endpoints under `/api/v1`; session rebuilt from the JWT | D06, §12.4 |
+| Two mock service files branching on a flag | One gateway per module over a swappable transport | Removes duplicated logic |
+| No tests | 84 tests | M3 |
 
-If the backend team finalises a different response shape, only these
-two files need to change — no page or component talks to axios
-directly (enforced by the API Client Boundary ADR).
+## Known limitations
 
-## Design decisions applied here (see PED Decision Log)
-
-- **Design pattern 1 — Facade over HTTP client**: `apiClient.js` wraps
-  axios so auth headers, base URL, and error normalisation live in one
-  place instead of being repeated in every component.
-- **Design pattern 2 — Provider/Context for session state**:
-  `AuthContext` avoids prop-drilling the current user through every
-  page and centralises login/logout/session-rehydration logic.
+- **Not integrated with the real API yet** (see above). Nothing here has been run against Express and PostgreSQL.
+- **Target days per category are assumed.** PED approves the rule (S-IN-010) but not the numbers; `src/domain/categories.js` holds working values. If the API sends `target_date` it is used instead.
+- **Who may reopen a completed request** is not stated in D10; staff only is assumed.
+- **Category correction** is allowed only while a request is Pending (assumed; REQ-024 does not say).
+- **Administrator screens** (staff accounts, categories) are not built: PED §10.6 defers them and §12.2 has no endpoints for them.
+- **The JWT is kept in `localStorage`**, readable by any script on the page. Acceptable for M3; an httpOnly cookie is the stronger option and would change only `session.js` and `httpTransport.js`.
+- **Accessibility** was built to the WCAG 2.2 AA criteria in PED §10.4 and checked by keyboard walkthrough and at 320 px and 390 px. It has not been through an automated axe/Lighthouse run or a screen-reader test.
+- **No end-to-end test suite is committed.** The browser walkthrough used to check this build was scripted but lives outside the repository.
+- Route-level role checks are a usability control only. The API must enforce every rule again (ASR-002).
 
 ## Environment variables
 
-| Variable                  | Purpose                                             |
-|----------------------------|-----------------------------------------------------|
-| `VITE_API_BASE_URL`        | Base path the frontend calls (default `/api`)       |
-| `VITE_API_PROXY_TARGET`    | Where the Vite dev server proxies `/api/*` to        |
-
-No secrets are stored in this repository. `.env` is git-ignored;
-`.env.example` documents the required variables.
-
-## Known limitations / TODOs
-
-- No automated tests yet (a Vitest + React Testing Library setup is the
-  planned next step, tracked as a forward engineering consideration).
-- Assumes JWT auth in a `Bearer` header; if the backend uses
-  cookie-based sessions instead, only `apiClient.js` needs to change.
-- Role-based UI (`staff`/`admin` views) trusts the `role` field
-  returned by the backend; the backend remains the authority and must
-  enforce role checks server-side regardless of what the UI hides.
+See `.env.example`. Every `VITE_` variable is compiled into the public bundle, so none may hold a secret.
