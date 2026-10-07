@@ -10,41 +10,66 @@
  *
  * Written once against a `transport` (Strategy): the same code runs on HTTP and on demo data.
  */
-import { toSessionUser } from './adapters/userAdapter'
-import { AppError, ERROR_CODE } from './AppError'
-import { clearToken, decodeJwt, readSession, saveToken } from './session'
+import { toSessionUser } from "./adapters/userAdapter";
+import { AppError, ERROR_CODE } from "./AppError";
+import { clearToken, decodeJwt, readSession, saveToken } from "./session";
 
 export function createAuthGateway(transport) {
   return {
     async register({ name, email, password }) {
-      return transport.post('/auth/register', { name: name.trim(), email: email.trim().toLowerCase(), password })
+      // Updated to match your backend User route
+      return transport.post("/users/register", {
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        password,
+      });
     },
 
     async verifyEmail(token) {
-      return transport.post('/auth/verify-email', { token })
+      // Updated to match your backend User route
+      return transport.post("/users/verify", { token });
     },
 
     async resendVerification(email) {
-      return transport.post('/auth/resend-verification', { email: email.trim().toLowerCase() })
+      // Placeholder: haven't built this in the backend yet, but we will leave it for later
+      return transport.post("/users/resend-verification", {
+        email: email.trim().toLowerCase(),
+      });
     },
 
     async signIn({ email, password }) {
-      const body = await transport.post('/auth/login', { email: email.trim().toLowerCase(), password })
-      const user = toSessionUser(body?.user, decodeJwt(body?.token ?? ''))
-      if (!body?.token || !user?.role) {
-        throw new AppError({ code: ERROR_CODE.UNAUTHENTICATED, message: 'Sign-in did not return a valid session.' })
+      // Updated to match backend User route
+      const body = await transport.post("/users/login", {
+        email: email.trim().toLowerCase(),
+        password,
+      });
+
+      // Extract from the PED-compliant 'data' envelope your controller sends
+      const payload = body?.data;
+
+      const user = toSessionUser(
+        payload?.user,
+        decodeJwt(payload?.token ?? ""),
+      );
+
+      // Removed the 'user?.role' check since we haven't added roles to our JWT yet
+      if (!payload?.token) {
+        throw new AppError({
+          code: ERROR_CODE.UNAUTHENTICATED,
+          message: "Sign-in did not return a valid session.",
+        });
       }
-      saveToken(body.token)
-      return user
+
+      saveToken(payload.token);
+      return user;
     },
 
-    /** Rebuilds the user from the stored JWT on page load. No network call. */
     currentUser() {
-      return toSessionUser(null, readSession())
+      return toSessionUser(null, readSession());
     },
 
     signOut() {
-      clearToken()
+      clearToken();
     },
-  }
+  };
 }

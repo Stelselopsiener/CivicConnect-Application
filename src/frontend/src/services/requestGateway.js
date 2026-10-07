@@ -27,97 +27,146 @@ import {
   toRequest,
   toRequestList,
   toSubmitBody,
-} from './adapters/requestAdapter'
-import { toUser } from './adapters/userAdapter'
-import { isOpen } from '../domain/requestLifecycle'
+} from "./adapters/requestAdapter";
+import { toUser } from "./adapters/userAdapter";
+import { isOpen } from "../domain/requestLifecycle";
 
 export const ACTION_TYPE = Object.freeze({
-  SUBMITTED: 'Submitted',
-  STATUS_CHANGE: 'Status change',
-  COMMENT: 'Comment added',
-  ASSIGNED: 'Assigned',
-  CATEGORY: 'Category corrected',
-})
+  SUBMITTED: "Submitted",
+  STATUS_CHANGE: "Status change",
+  COMMENT: "Comment added",
+  ASSIGNED: "Assigned",
+  CATEGORY: "Category corrected",
+});
 
-const unwrap = (body) => body?.request ?? body
+// Updated to safely extract PED-compliant 'data' envelope if present
+const unwrap = (body) =>
+  body?.data?.request ?? body?.data ?? body?.request ?? body;
 
-/** Drops empty filters so the query string only carries what the user chose. */
 const compact = (params = {}) =>
-  Object.fromEntries(Object.entries(params).filter(([, value]) => value !== '' && value != null))
+  Object.fromEntries(
+    Object.entries(params).filter(([, value]) => value !== "" && value != null),
+  );
 
-/**
- * "Open" and "Overdue" are derived views, not stored statuses (D10), so they are never sent as
- * `?status=`. The gateway asks for the unfiltered list and narrows it with the domain rules.
- */
-export const DERIVED_VIEW = Object.freeze({ OPEN: 'open', OVERDUE: 'overdue' })
+export const DERIVED_VIEW = Object.freeze({ OPEN: "open", OVERDUE: "overdue" });
 
 const DERIVED_FILTERS = {
   [DERIVED_VIEW.OPEN]: (request) => isOpen(request.status),
   [DERIVED_VIEW.OVERDUE]: (request) => request.isOverdue,
-}
+};
 
 async function listWithView(transport, url, { status, ...filters }) {
-  const derived = DERIVED_FILTERS[status]
-  const body = await transport.get(url, compact(derived ? filters : { status, ...filters }))
-  const requests = toRequestList(body)
-  return derived ? requests.filter(derived) : requests
+  const derived = DERIVED_FILTERS[status];
+  const body = await transport.get(
+    url,
+    compact(derived ? filters : { status, ...filters }),
+  );
+  // Safely unpack the data envelope for array responses
+  const payload = body?.data ?? body;
+  const requests = toRequestList(payload);
+  return derived ? requests.filter(derived) : requests;
 }
 
 export function createRequestGateway(transport) {
   return {
     async submit(form) {
-      return toRequest(unwrap(await transport.post('/requests', toSubmitBody(form))))
+      return toRequest(
+        unwrap(await transport.post("/requests", toSubmitBody(form))),
+      );
     },
 
     async listMine() {
-      return toRequestList(await transport.get('/requests/my'))
+      const body = await transport.get("/requests/my");
+      return toRequestList(body?.data ?? body); // Safely unpack the envelope
     },
 
     async getById(id) {
-      return toRequest(unwrap(await transport.get(`/requests/${id}`)))
+      return toRequest(unwrap(await transport.get(`/requests/${id}`)));
     },
 
     async listForStaff({ status, search, sort } = {}) {
-      return listWithView(transport, '/staff/requests', { status, search, sort })
+      return listWithView(transport, "/staff/requests", {
+        status,
+        search,
+        sort,
+      });
     },
 
     async listStaffMembers(category) {
-      const body = await transport.get('/staff/members', compact({ category }))
-      const rows = Array.isArray(body) ? body : (body?.members ?? body?.staff ?? [])
-      return rows.map(toUser).filter(Boolean)
+      const body = await transport.get("/staff/members", compact({ category }));
+      const payload = body?.data ?? body;
+      const rows = Array.isArray(payload)
+        ? payload
+        : (payload?.members ?? payload?.staff ?? []);
+      return rows.map(toUser).filter(Boolean);
     },
 
     async assign(id, staffId) {
-      return toRequest(unwrap(await transport.patch(`/requests/${id}/assign`, { staff_id: Number(staffId) || staffId })))
+      return toRequest(
+        unwrap(
+          await transport.patch(`/requests/${id}/assign`, {
+            staff_id: Number(staffId) || staffId,
+          }),
+        ),
+      );
     },
 
     async changeCategory(id, category) {
-      return toRequest(unwrap(await transport.patch(`/requests/${id}/category`, { category })))
+      return toRequest(
+        unwrap(await transport.patch(`/requests/${id}/category`, { category })),
+      );
     },
 
-    async changeStatus(id, { newStatus, comment = '' }) {
-      const body = { new_status: newStatus, comment: comment.trim(), action_type: ACTION_TYPE.STATUS_CHANGE }
-      return toRequest(unwrap(await transport.patch(`/requests/${id}/status`, body)))
+    async changeStatus(id, { newStatus, comment = "" }) {
+      const body = {
+        new_status: newStatus,
+        comment: comment.trim(),
+        action_type: ACTION_TYPE.STATUS_CHANGE,
+      };
+      return toRequest(
+        unwrap(await transport.patch(`/requests/${id}/status`, body)),
+      );
     },
 
-    /** A comment is an action row whose status does not change (D10: "updated" is not a state). */
     async addComment(id, { currentStatus, comment }) {
-      const body = { new_status: currentStatus, comment: comment.trim(), action_type: ACTION_TYPE.COMMENT }
-      return toRequest(unwrap(await transport.patch(`/requests/${id}/status`, body)))
+      const body = {
+        new_status: currentStatus,
+        comment: comment.trim(),
+        action_type: ACTION_TYPE.COMMENT,
+      };
+      return toRequest(
+        unwrap(await transport.patch(`/requests/${id}/status`, body)),
+      );
     },
 
     async getOverview({ startDate, endDate, category, status } = {}) {
-      const params = compact({ start_date: startDate, end_date: endDate, category, status })
-      return toOverview(await transport.get('/admin/overview', params))
+      const params = compact({
+        start_date: startDate,
+        end_date: endDate,
+        category,
+        status,
+      });
+      const body = await transport.get("/admin/overview", params);
+      return toOverview(body?.data ?? body);
     },
 
     async listAudit({ search, actionType, startDate, endDate } = {}) {
-      const params = compact({ search, action_type: actionType, start_date: startDate, end_date: endDate })
-      return toAuditEntries(await transport.get('/admin/audit', params))
+      const params = compact({
+        search,
+        action_type: actionType,
+        start_date: startDate,
+        end_date: endDate,
+      });
+      const body = await transport.get("/admin/audit", params);
+      return toAuditEntries(body?.data ?? body);
     },
 
     async listAll({ status, category, search } = {}) {
-      return listWithView(transport, '/admin/requests', { status, category, search })
+      return listWithView(transport, "/admin/requests", {
+        status,
+        category,
+        search,
+      });
     },
-  }
+  };
 }

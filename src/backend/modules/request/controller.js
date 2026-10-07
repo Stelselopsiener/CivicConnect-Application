@@ -2,9 +2,9 @@ const requestService = require("./service");
 
 const handleGetMyRequests = async (req, res) => {
   try {
-    // Now dynamically pulled from the verified JWT!
-    const requesterId = req.user.user_id;
-    const result = await requestService.getMyRequests(requesterId);
+    // Safely extract the ID whether your JWT calls it user_id, id, or _id
+    const userId = req.user.user_id || req.user.id || req.user._id;
+    const result = await requestService.getMyRequests(userId);
     res.status(200).json(result);
   } catch (err) {
     res
@@ -15,10 +15,16 @@ const handleGetMyRequests = async (req, res) => {
 
 const handleCreateRequest = async (req, res) => {
   try {
+    const userId = req.user.user_id || req.user.id || req.user._id;
+
     const requestData = {
       ...req.body,
-      requester_id: req.user.user_id, // Dynamically pulled from JWT
+      requester_id: userId,
     };
+
+    // Logs the exact final payload to your Express terminal
+    console.log("Submitting Request Data:", requestData);
+
     const result = await requestService.submitRequest(requestData);
     res.status(201).json(result);
   } catch (err) {
@@ -28,4 +34,28 @@ const handleCreateRequest = async (req, res) => {
   }
 };
 
-module.exports = { handleGetMyRequests, handleCreateRequest };
+// New controller function to handle the detail fetch
+const handleGetRequestById = async (req, res) => {
+  try {
+    const requestId = req.params.id;
+    const result = await requestService.getRequestById(requestId);
+
+    if (!result) {
+      return res
+        .status(404)
+        .json({ error: { code: "NOT_FOUND", message: "Request not found" } });
+    }
+
+    res.status(200).json(result);
+  } catch (err) {
+    res
+      .status(500)
+      .json({ error: { code: "SERVER_ERROR", message: err.message } });
+  }
+};
+
+module.exports = {
+  handleGetMyRequests,
+  handleCreateRequest,
+  handleGetRequestById,
+};

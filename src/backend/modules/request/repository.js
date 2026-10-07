@@ -48,4 +48,15 @@ const createRequest = async (requestData) => {
   };
 };
 
-module.exports = { findRequestsByRequester, createRequest };
+// New function to query a single request by its ID
+const findRequestById = async (requestId) => {
+  const query = `
+    SELECT *
+    FROM service_request
+    WHERE service_request_id = $1;
+  `;
+  const { rows } = await pool.query(query, [requestId]);
+  return rows[0];
+};
+
+module.exports = { findRequestsByRequester, createRequest, findRequestById };
