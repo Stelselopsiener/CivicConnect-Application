@@ -1,71 +1,93 @@
-const mockUsers = [];
-const mockVerificationTokens = [];
+const pool = require("../../config/db");
 
 const createUser = async (userData) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const newUserId = mockUsers.length + 1;
+  // We use a database transaction to ensure both the user and their token
+  // are created successfully, or neither are saved.
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
 
-      const newUser = {
-        user_id: newUserId,
-        name: userData.name,
-        email: userData.email,
-        password_hash: userData.password_hash,
-        email_verified: false,
-      };
+    // Note: "user" is a reserved word in Postgres, so we wrap it in quotes
+    const insertUserQuery = `
+      INSERT INTO "user" (name, email, password_hash, user_type, email_verified)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING user_id, email, email_verified;
+    `;
+    const userValues = [
+      userData.name,
+      userData.email,
+      userData.password_hash,
+      "requester", // Default role per your PED
+      false,
+    ];
+    const userResult = await client.query(insertUserQuery, userValues);
+    const newUser = userResult.rows[0];
 
-      const newVerificationToken = {
-        token_id: mockVerificationTokens.length + 1,
-        user_id: newUserId,
-        token_hash: userData.token_hash,
-        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-        used_at: null,
-      };
+    const insertTokenQuery = `
+      INSERT INTO verification_token (user_id, token_hash, expires_at)
+      VALUES ($1, $2, $3);
+    `;
+    // Set expiry to 24 hours from now
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    await client.query(insertTokenQuery, [
+      newUser.user_id,
+      userData.token_hash,
+      expiresAt,
+    ]);
 
-      mockUsers.push(newUser);
-      mockVerificationTokens.push(newVerificationToken);
-
-      resolve({
-        user_id: newUserId,
-        email: newUser.email,
-        email_verified: newUser.email_verified,
-      });
-    }, 100);
-  });
+    await client.query("COMMIT");
+    return newUser;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 const findUserByEmail = async (email) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(mockUsers.find((user) => user.email === email));
-    }, 100);
-  });
+  // UPDATED: Joins the category tables so the frontend can display the department name
+  const query = `
+    SELECT 
+      u.*, 
+      c.name AS category 
+    FROM "user" u
+    LEFT JOIN staff_category sc ON u.user_id = sc.user_id
+    LEFT JOIN category c ON sc.category_id = c.category_id
+    WHERE u.email = $1;
+  `;
+  const { rows } = await pool.query(query, [email]);
+  return rows[0]; // Returns undefined if no user is found
 };
 
-// Add these below your existing createUser and findUserByEmail functions:
-
 const findTokenByHash = async (tokenHash) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(mockVerificationTokens.find((t) => t.token_hash === tokenHash));
-    }, 100);
-  });
+  const query = `SELECT * FROM verification_token WHERE token_hash = $1;`;
+  const { rows } = await pool.query(query, [tokenHash]);
+  return rows[0];
 };
 
 const markUserVerified = async (userId, tokenId) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      // 1. Mark user as verified
-      const user = mockUsers.find((u) => u.user_id === userId);
-      if (user) user.email_verified = true;
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
 
-      // 2. Mark token as used so it cannot be reused
-      const token = mockVerificationTokens.find((t) => t.token_id === tokenId);
-      if (token) token.used_at = new Date().toISOString();
+    await client.query(
+      `UPDATE "user" SET email_verified = true WHERE user_id = $1;`,
+      [userId],
+    );
+    await client.query(
+      `UPDATE verification_token SET used_at = NOW() WHERE token_id = $1;`,
+      [tokenId],
+    );
 
-      resolve(true);
-    }, 100);
-  });
+    await client.query("COMMIT");
+    return true;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 module.exports = {

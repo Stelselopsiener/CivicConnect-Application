@@ -61,7 +61,12 @@ const loginUser = async (email, password) => {
 
   // 3. Generate the JWT (expires in 24 hours)
   const token = jwt.sign(
-    { user_id: user.user_id, email: user.email },
+    {
+      user_id: user.user_id,
+      email: user.email,
+      user_type: user.user_type, // Exposes role to API middleware
+      category: user.category, // Exposes department string to API middleware
+    },
     process.env.JWT_SECRET,
     { expiresIn: "24h" },
   );
@@ -71,12 +76,12 @@ const loginUser = async (email, password) => {
       user_id: user.user_id,
       name: user.name,
       email: user.email,
+      user_type: user.user_type, // Exposes role to React router
+      category: user.category, // Exposes department string to React UI
     },
     token,
   };
 };
-
-// Add this below your loginUser function:
 
 const verifyEmail = async (plainToken) => {
   // 1. Hash the incoming plain token to match what is in the database

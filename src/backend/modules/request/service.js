@@ -62,4 +62,45 @@ const getRequestById = async (requestId) => {
   return formatForFrontend(request);
 };
 
-module.exports = { getMyRequests, submitRequest, getRequestById };
+const updateRequestStatus = async (requestId, userId, updateData) => {
+  const { new_status, comment, action_type } = updateData;
+
+  if (!new_status || !action_type) {
+    throw new Error("New status and action type are required.");
+  }
+
+  // 1. Insert the new action into the database timeline
+  await requestRepo.addTimelineAction({
+    requestId,
+    performedBy: userId,
+    newStatus: new_status,
+    comment: comment || null,
+    actionType: action_type,
+  });
+
+  // 2. Fetch the fully updated request (which will automatically derive the new status)
+  // so the frontend can immediately display the changes.
+  return await getRequestById(requestId);
+};
+
+const cancelAndDeleteRequest = async (requestId, requesterId) => {
+  const deleted = await requestRepo.deleteRequestIfPending(
+    requestId,
+    requesterId,
+  );
+
+  if (!deleted) {
+    throw new Error(
+      "Cannot cancel: Request not found or staff have already accepted this request.",
+    );
+  }
+
+  return { success: true, message: "Request successfully deleted." };
+};
+
+module.exports = {
+  getMyRequests,
+  submitRequest,
+  getRequestById,
+  updateRequestStatus,
+};

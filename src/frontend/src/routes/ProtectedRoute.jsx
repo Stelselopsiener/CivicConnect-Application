@@ -7,21 +7,37 @@
  *
  * This is a usability control. The API checks the JWT and role again on every call (ASR-002).
  */
-import { Navigate, Outlet, useLocation } from 'react-router-dom'
-import { useAuth } from '../hooks/useAuth'
-import { homeFor } from '../domain/navigation'
+import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
+import { homeFor } from "../domain/navigation";
 
 export default function ProtectedRoute({ roles }) {
-  const { isAuthenticated, user, signedOut } = useAuth()
-  const location = useLocation()
+  const { isAuthenticated, user, signedOut } = useAuth();
+  const location = useLocation();
 
-  if (!isAuthenticated) return <Navigate to="/sign-in" replace state={signedOut ? null : { from: location }} />
-  if (roles && !roles.includes(user.role)) return <Navigate to={homeFor(user.role)} replace />
-  return <Outlet />
+  if (!isAuthenticated)
+    return (
+      <Navigate
+        to="/sign-in"
+        replace
+        state={signedOut ? null : { from: location }}
+      />
+    );
+
+  // Safely extract the role using user_type to match the backend JWT payload
+  const currentRole = user?.user_type || user?.role;
+
+  if (roles && !roles.includes(currentRole))
+    return <Navigate to={homeFor(currentRole)} replace />;
+  return <Outlet />;
 }
 
 /** "/" and any signed-in visit to an auth page land on the role's own home page. */
 export function RoleHome() {
-  const { user } = useAuth()
-  return <Navigate to={homeFor(user?.role)} replace />
+  const { user } = useAuth();
+
+  // Safely extract the role using user_type to match the backend JWT payload
+  const currentRole = user?.user_type || user?.role;
+
+  return <Navigate to={homeFor(currentRole)} replace />;
 }

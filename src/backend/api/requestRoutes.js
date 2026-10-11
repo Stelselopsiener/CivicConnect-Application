@@ -7,5 +7,6 @@ const { requireAuth } = require("../middleware/authMiddleware");
 router.get("/my", requireAuth, requestController.handleGetMyRequests);
 router.post("/", requireAuth, requestController.handleCreateRequest);
 router.get("/:id", requireAuth, requestController.handleGetRequestById);
+router.patch("/:id/status", requireAuth, requestController.handleUpdateStatus);
 
 module.exports = router;

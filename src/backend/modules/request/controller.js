@@ -2,10 +2,9 @@ const requestService = require("./service");
 
 const handleGetMyRequests = async (req, res) => {
   try {
-    // Safely extract the ID whether your JWT calls it user_id, id, or _id
     const userId = req.user.user_id || req.user.id || req.user._id;
     const result = await requestService.getMyRequests(userId);
-    res.status(200).json(result);
+    res.status(200).json({ data: result });
   } catch (err) {
     res
       .status(500)
@@ -22,11 +21,10 @@ const handleCreateRequest = async (req, res) => {
       requester_id: userId,
     };
 
-    // Logs the exact final payload to your Express terminal
     console.log("Submitting Request Data:", requestData);
 
     const result = await requestService.submitRequest(requestData);
-    res.status(201).json(result);
+    res.status(201).json({ data: result });
   } catch (err) {
     res
       .status(400)
@@ -34,7 +32,6 @@ const handleCreateRequest = async (req, res) => {
   }
 };
 
-// New controller function to handle the detail fetch
 const handleGetRequestById = async (req, res) => {
   try {
     const requestId = req.params.id;
@@ -46,7 +43,7 @@ const handleGetRequestById = async (req, res) => {
         .json({ error: { code: "NOT_FOUND", message: "Request not found" } });
     }
 
-    res.status(200).json(result);
+    res.status(200).json({ data: result });
   } catch (err) {
     res
       .status(500)
@@ -54,8 +51,30 @@ const handleGetRequestById = async (req, res) => {
   }
 };
 
+const handleUpdateStatus = async (req, res) => {
+  try {
+    const requestId = req.params.id;
+    const userId = req.user.user_id || req.user.id || req.user._id;
+    const updateData = req.body;
+
+    const result = await requestService.updateRequestStatus(
+      requestId,
+      userId,
+      updateData,
+    );
+
+    // Return the updated request wrapped in the { data } envelope the frontend expects
+    res.status(200).json({ data: result });
+  } catch (err) {
+    res
+      .status(400)
+      .json({ error: { code: "BAD_REQUEST", message: err.message } });
+  }
+};
+
 module.exports = {
   handleGetMyRequests,
   handleCreateRequest,
   handleGetRequestById,
+  handleUpdateStatus,
 };

@@ -104,7 +104,7 @@ export function createRequestGateway(transport) {
     async assign(id, staffId) {
       return toRequest(
         unwrap(
-          await transport.patch(`/requests/${id}/assign`, {
+          await transport.patch(`/staff/requests/${id}/assign`, {
             staff_id: Number(staffId) || staffId,
           }),
         ),
@@ -113,7 +113,9 @@ export function createRequestGateway(transport) {
 
     async changeCategory(id, category) {
       return toRequest(
-        unwrap(await transport.patch(`/requests/${id}/category`, { category })),
+        unwrap(
+          await transport.patch(`/staff/requests/${id}/category`, { category }),
+        ),
       );
     },
 
