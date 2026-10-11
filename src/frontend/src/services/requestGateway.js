@@ -175,6 +175,26 @@ export function createRequestGateway(transport) {
     // 7# Change -  Added new method called cancelAndDelete
     async cancelAndDelete(id) {
       return await transport.delete(`/requests/${id}`);
-}
+    },
+
+    async getAdminOverview(params) {
+      return await transport.get("/admin/overview", compact(params));
+    },
+
+    async listAuditTrail(params) {
+      return await transport.get("/admin/audit", compact(params));
+    },
+
+    async listAllAdminRequests(params) {
+      return await transport.get("/admin/requests", compact(params));
+    },
+
+    async listUsers(params) {
+      return await transport.get("/admin/users", compact(params));
+    },
+
+    async updateUserType(userId, userType) {
+      return await transport.patch(`/admin/users/${userId}/type`, { user_type: userType });
+    }
   };
 }

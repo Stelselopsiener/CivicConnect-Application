@@ -53,7 +53,21 @@ VALUES (
     // Removed start and end dates
     requestData.street_address,
   ]);
+  const serviceRequestId = rows[0].service_request_id;
 
+  await pool.query(
+    `INSERT INTO action (service_request_id, performed_by, date, comment, status_id, action_type_id)
+     VALUES (
+       $1, $2, NOW(), $3,
+       (SELECT status_id FROM action_status WHERE name = 'pending'),
+       (SELECT action_type_id FROM action_type WHERE name = 'submitted')
+     )`,
+    [
+      serviceRequestId,
+      requestData.requester_id,
+      requestData.title ? `Submitted: ${requestData.title}` : "Request submitted",
+    ],
+  );
   // BENNO
   // #2 Change - For the return section, the start and end date was added
   return {
@@ -142,13 +156,16 @@ const addTimelineAction = async ({
     Rejected: "rejected",
   };
 
-  const dbActionMap = {
+const dbActionMap = {
     "Status change": "status_change",
     "Comment added": "comment",
+    "Submitted": "submitted",
+    "Assigned": "assigned",
+    "Category corrected": "category_update",
   };
 
   const statusName = dbStatusMap[newStatus] || "pending";
-  const actionTypeName = dbActionMap[actionType] || "comment";
+  const actionTypeName = dbActionMap[actionType] || actionType?.toLowerCase?.().replace(/\s+/g, "_") || "comment";
 
   const insertActionQuery = `
     INSERT INTO action (service_request_id, performed_by, date, comment, status_id, action_type_id)

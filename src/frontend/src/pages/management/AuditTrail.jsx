@@ -18,18 +18,27 @@ const PERIODS = [
 ]
 const NO_FILTERS = { search: '', actionType: '', period: '7' }
 
-const toQuery = ({ search, actionType, period }) => ({
-  search: search.trim(),
-  actionType,
-  startDate: period ? toDateInput(new Date(Date.now() - Number(period) * 86400000)) : '',
-})
+const toQuery = ({ search, actionType, period }) => {
+  let startDate = ""
+  if (period) {
+    const d = new Date()
+    d.setHours(0, 0, 0, 0)
+    d.setDate(d.getDate() - Number(period))
+    startDate = toDateInput(d) // still YYYY-MM-DD
+  }
+  return {
+    search: search.trim(),
+    actionType,
+    startDate,
+  }
+}
 
 const change = (entry) => {
   if (entry.detail) return entry.detail
   if (entry.statusChanged) return `${entry.previousStatus} → ${entry.newStatus}`
   return entry.type === ACTION_TYPE.SUBMITTED ? `New → ${entry.newStatus}` : null
 }
-const actor = (entry) => entry.actor?.name ?? 'Requester'
+const actor = (entry) => entry.actor?.name ?? entry.staff_name ?? entry.actor_name ?? 'Requester'
 
 /**
  * Management: who did what, when, and previous → new (REQ-021, ASR-009).

@@ -23,21 +23,46 @@ const person = (nested, id, name, email) => {
   return { id: String(personId), name: nested?.name ?? name ?? '', email: nested?.email ?? email ?? '' }
 }
 
+const ACTION_TYPE_DB_TO_UI = {
+  submitted: "Submitted",
+  created: "Submitted",
+  status_change: "Status change",
+  comment: "Comment added",
+  comment_added: "Comment added",
+  assigned: "Assigned",
+  category_update: "Category corrected",
+}
+
+const STATUS_DB_TO_UI = {
+  pending: "Pending",
+  accepted: "Accepted",
+  in_progress: "In Progress",
+  completed: "Completed",
+  closed: "Closed",
+  rejected: "Rejected",
+  cancelled: "Cancelled",
+}
+
 export function toAction(dto) {
-  const previousStatus = dto.previous_status ?? null
-  const newStatus = dto.new_status ?? null
+  const rawPrev = dto.previous_status ?? null
+  const rawNew = dto.new_status ?? null
+  // First action on a request has no LAG row → treat as Pending
+  const previousStatus = rawPrev ?? (rawNew ? "Pending" : null)
+  const newStatus = rawNew
   return {
     id: String(dto.action_id ?? dto.id),
     requestId: dto.service_request_id != null ? String(dto.service_request_id) : null,
     reference: dto.service_request_id != null ? formatReference(dto.service_request_id) : null,
-    type: dto.action_type ?? 'Update',
+    type: dto.action_type ?? dto.action_type_name ?? "Update",
     previousStatus,
     newStatus,
-    statusChanged: Boolean(previousStatus && newStatus && previousStatus !== newStatus),
+    statusChanged: Boolean(
+      previousStatus && newStatus && String(previousStatus).toLowerCase() !== String(newStatus).toLowerCase()
+    ),
     detail: dto.detail ?? null,
-    comment: dto.comment ?? '',
+    comment: dto.comment && dto.comment.trim() ? dto.comment : "-",
     date: toDate(dto.date ?? dto.created_at),
-    actor: person(dto.staff, dto.staff_id, dto.staff_name),
+    actor: person(dto.staff, dto.staff_id, dto.staff_name ?? dto.actor_name),
   }
 }
 
