@@ -48,7 +48,7 @@ export function toRequest(dto, now = new Date()) {
   const category = dto.category ?? 'Other'
   const actions = (dto.actions ?? []).map(toAction).sort((a, b) => (b.date ?? 0) - (a.date ?? 0))
   // The server may send target_date; otherwise derive it with the same S-IN-010 rule.
-  const targetDate = toDate(dto.target_date) ?? targetDateFor(createdAt, category)
+  const targetDate = toDate(dto.target_date) ?? toDate(dto.end_date) ?? targetDateFor(createdAt, category)
   return {
     id: String(id),
     reference: formatReference(id),
@@ -81,8 +81,8 @@ export function toSubmitBody(form) {
     title: form.title.trim(),
     description: form.description.trim(),
     street_address: form.streetAddress.trim(),
-    start_date: form.startDate,
-    end_date: form.endDate || null,
+    // BENNO
+    // Removed start and end date
     category: form.category,
   }
 }

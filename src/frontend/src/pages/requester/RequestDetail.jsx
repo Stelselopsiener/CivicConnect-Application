@@ -1,4 +1,7 @@
 import { useState } from 'react'
+// BENNO
+// Added useNavigate
+import { useNavigate } from 'react-router-dom'
 import { requestGateway } from '../../services'
 import { ROLE, STATUS, canTransition, isOpen } from '../../domain/requestLifecycle'
 import { formatDate } from '../../utils/format'
@@ -10,6 +13,16 @@ import DetailList from '../../components/requests/DetailList'
 import LifecycleRail from '../../components/requests/LifecycleRail'
 import StatusPill, { OverduePill } from '../../components/requests/StatusPill'
 import Timeline from '../../components/requests/Timeline'
+
+const ENDED_STATUSES = new Set([STATUS.COMPLETED, STATUS.CLOSED, STATUS.REJECTED, STATUS.CANCELLED])
+
+function actualEndedDate(request) {
+  const actions = request.actions ?? []
+  const endAction = [...actions]
+    .reverse()
+    .find((a) => a.statusChanged && ENDED_STATUSES.has(a.newStatus))
+  return endAction?.date ?? null
+}
 
 /** Requester: one request, its plain-language progress and what happens next (REQ-004, REQ-006). */
 export default function RequestDetail({ request, onChanged }) {
@@ -42,7 +55,7 @@ export default function RequestDetail({ request, onChanged }) {
                 ['Category', request.category],
                 ['Street address', request.streetAddress],
                 ['Started', formatDate(request.startDate)],
-                ['Ended', request.endDate ? formatDate(request.endDate) : 'Ongoing'],
+                ['Ended', actualEndedDate(request) ? formatDate(actualEndedDate(request)) : 'Ongoing'], // <-- UPDATED HERE
                 ['Description', <span key="description" className="whitespace-pre-line">{request.description}</span>],
               ]}
             />
@@ -82,6 +95,7 @@ function CancelCard({ request, onChanged }) {
   const [confirming, setConfirming] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
+  const navigate = useNavigate() // ADDED
 
   if (!isOpen(request.status)) return null
   const allowed = canTransition(request.status, STATUS.CANCELLED, ROLE.REQUESTER)
@@ -90,7 +104,8 @@ function CancelCard({ request, onChanged }) {
     setBusy(true)
     setError(null)
     try {
-      onChanged(await requestGateway.changeStatus(request.id, { newStatus: STATUS.CANCELLED }))
+      await requestGateway.cancelAndDelete(request.id) // FIXED: Calls delete instead of status change
+      navigate('/requests', { replace: true }) // Redirect back to list
     } catch (failure) {
       setError(failure)
       setBusy(false)

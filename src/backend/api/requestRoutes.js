@@ -9,4 +9,8 @@ router.post("/", requireAuth, requestController.handleCreateRequest);
 router.get("/:id", requireAuth, requestController.handleGetRequestById);
 router.patch("/:id/status", requireAuth, requestController.handleUpdateStatus);
 
+// BENNO
+// 6# Change - Add a new route for the deletion of requests
+router.delete("/:id", requireAuth, requestController.handleCancelRequest);
+
 module.exports = router;

@@ -17,6 +17,10 @@ const findRequestsByRequester = async (requesterId) => {
   return rows;
 };
 
+// BENNO
+// 1# Change - Ensure start and end date are automatically calculated by the system
+// The $5 and $6 in the VALUES section is replaced with CURRENT_DATE and CURRENT_DATE (with more code)
+//In the RETURNING section, the start and end date is added
 const createRequest = async (requestData) => {
   const insertRequestQuery = `
     INSERT INTO service_request (
@@ -28,8 +32,16 @@ const createRequest = async (requestData) => {
       end_date,
       street_address
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7)
-    RETURNING service_request_id;
+VALUES (
+      $1, 
+      $2, 
+      $3, 
+      $4, 
+      CURRENT_DATE,
+      CURRENT_DATE + (SELECT target_days FROM category WHERE category_id = $2),
+      $5
+    )
+      RETURNING service_request_id, start_date, end_date;
   `;
 
   const { rows } = await pool.query(insertRequestQuery, [
@@ -37,13 +49,17 @@ const createRequest = async (requestData) => {
     requestData.category_id,
     requestData.title,
     requestData.description,
-    requestData.start_date,
-    requestData.end_date,
+    // BENNO
+    // Removed start and end dates
     requestData.street_address,
   ]);
 
+  // BENNO
+  // #2 Change - For the return section, the start and end date was added
   return {
     service_request_id: rows[0].service_request_id,
+    start_date: rows[0].start_date,
+    end_date: rows[0].end_date,
     status: "Pending",
   };
 };
@@ -157,9 +173,42 @@ const addTimelineAction = async ({
   return true;
 };
 
+// BENNO
+// 3# Change - New method called deleteRequestIfPending
+const deleteRequestIfPending = async (requestId, requesterId) => {
+  const query = `
+    DELETE FROM service_request sr
+    WHERE sr.service_request_id = $1 
+      AND sr.requester_id = $2 
+      AND (
+        -- Option A: No actions exist yet (brand new request)
+        NOT EXISTS (
+          SELECT 1 FROM action a WHERE a.service_request_id = sr.service_request_id
+        )
+        OR
+        -- Option B: The latest action on this request has a 'pending' status
+        EXISTS (
+          SELECT 1 FROM action a
+          JOIN action_status ast ON a.status_id = ast.status_id
+          WHERE a.service_request_id = sr.service_request_id
+            AND LOWER(ast.name) = 'pending'
+            AND a.date = (
+              SELECT MAX(a2.date) 
+              FROM action a2 
+              WHERE a2.service_request_id = sr.service_request_id
+            )
+        )
+      )
+    RETURNING sr.service_request_id;
+  `;
+  const { rows } = await pool.query(query, [requestId, requesterId]);
+  return rows[0];
+};
+
 module.exports = {
   findRequestsByRequester,
   createRequest,
   findRequestById,
   addTimelineAction,
+  deleteRequestIfPending
 };

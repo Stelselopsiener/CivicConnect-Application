@@ -47,4 +47,7 @@ export const httpTransport = {
   post: (url, body) => client.post(url, body).then((response) => response.data),
   patch: (url, body) =>
     client.patch(url, body).then((response) => response.data),
+  // BENNO
+  // Added delete property
+  delete: (url) => client.delete(url).then((response) => response.data),
 };

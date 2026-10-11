@@ -170,5 +170,11 @@ export function createRequestGateway(transport) {
         search,
       });
     },
+
+    // BENNO
+    // 7# Change -  Added new method called cancelAndDelete
+    async cancelAndDelete(id) {
+      return await transport.delete(`/requests/${id}`);
+}
   };
 }

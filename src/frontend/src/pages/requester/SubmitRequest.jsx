@@ -13,13 +13,13 @@ import Field, { FieldError, RequiredMark } from '../../components/common/Field'
 import PageHeader from '../../components/common/PageHeader'
 import CategoryChips from '../../components/requests/CategoryChips'
 
-const EMPTY = { category: '', title: '', description: '', streetAddress: '', startDate: toDateInput(), endDate: '' }
+// BENNO
+// Changed the 3 const objects to remove dates
+const EMPTY = { category: '', title: '', description: '', streetAddress: '' }
 
-/** Where the error summary should send focus for each field. */
-const FIELD_IDS = { category: 'category-first', title: 'title', description: 'description', streetAddress: 'streetAddress', startDate: 'startDate', endDate: 'endDate' }
+const FIELD_IDS = { category: 'category-first', title: 'title', description: 'description', streetAddress: 'streetAddress' }
 
-/** API field names (snake_case) -> form field names, for server-side validation details. */
-const API_FIELDS = { street_address: 'streetAddress', start_date: 'startDate', end_date: 'endDate' }
+const API_FIELDS = { street_address: 'streetAddress' }
 
 /** Requester: report a problem (REQ-001 to REQ-003, REQ-031, REQ-035; CR-001, CR-002). */
 export default function SubmitRequest() {
@@ -111,14 +111,16 @@ export default function SubmitRequest() {
           {(a11y) => <input {...a11y} name="streetAddress" autoComplete="street-address" value={form.streetAddress} onChange={onInput} className="input" />}
         </Field>
 
-        <div className="grid gap-7 sm:grid-cols-2 sm:gap-5">
+        {/* BENNO */}
+        {/* 8# Change -  Deleted inputs for both start and end dates*/}
+        {/* <div className="grid gap-7 sm:grid-cols-2 sm:gap-5">
           <Field id="startDate" label="Start date" required error={errors.startDate} hint="When the problem started.">
             {(a11y) => <input {...a11y} name="startDate" type="date" max={toDateInput()} value={form.startDate} onChange={onInput} className="input" />}
           </Field>
           <Field id="endDate" label="End date" error={errors.endDate} hint="Leave empty if the problem is ongoing.">
             {(a11y) => <input {...a11y} name="endDate" type="date" min={form.startDate || undefined} value={form.endDate} onChange={onInput} className="input" />}
           </Field>
-        </div>
+        </div> */}
 
         <div className="flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-line pt-6">
           <Button type="submit" busy={busy} busyLabel="Submitting…">
