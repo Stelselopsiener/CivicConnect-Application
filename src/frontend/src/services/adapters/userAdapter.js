@@ -16,7 +16,7 @@ export function toUser(dto) {
 
   return {
     id: String(id),
-    name: dto.name ?? "Civic User",
+    name: dto.name ?? "",
     email: dto.email ?? "",
     // FIX: Force lowercase so "Admin" or "Management" match the router arrays perfectly
     role: String(rawRole).toLowerCase(),

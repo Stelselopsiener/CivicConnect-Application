@@ -63,7 +63,24 @@ const handleUpdateStatus = async (req, res) => {
       updateData,
     );
 
-    // Return the updated request wrapped in the { data } envelope the frontend expects
+    res.status(200).json({ data: result });
+  } catch (err) {
+    // I added this log so you can always see the exact error in your terminal!
+    console.error(`[Status Update Error - Request ${req.params.id}]:`, err);
+    res
+      .status(400)
+      .json({ error: { code: "BAD_REQUEST", message: err.message } });
+  }
+};
+
+const handleCancelRequest = async (req, res) => {
+  try {
+    const requestId = req.params.id;
+    const userId = req.user.user_id || req.user.id || req.user._id;
+    const result = await requestService.cancelAndDeleteRequest(
+      requestId,
+      userId,
+    );
     res.status(200).json({ data: result });
   } catch (err) {
     res
@@ -77,4 +94,5 @@ module.exports = {
   handleCreateRequest,
   handleGetRequestById,
   handleUpdateStatus,
+  handleCancelRequest,
 };

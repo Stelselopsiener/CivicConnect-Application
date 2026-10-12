@@ -10,7 +10,6 @@ const CATEGORY_MAP = {
   Other: 7,
 };
 
-// We need a reverse map to translate IDs back into text for the frontend
 const REVERSE_CATEGORY_MAP = {
   1: "Facility Fault",
   2: "Equipment damage",
@@ -21,7 +20,6 @@ const REVERSE_CATEGORY_MAP = {
   7: "Other",
 };
 
-// Helper function to attach the readable category string to database rows
 const formatForFrontend = (request) => {
   if (!request) return null;
   return {
@@ -32,7 +30,6 @@ const formatForFrontend = (request) => {
 
 const getMyRequests = async (requesterId) => {
   const requests = await requestRepo.findRequestsByRequester(requesterId);
-  // Format every request in the list
   return requests.map(formatForFrontend);
 };
 
@@ -47,39 +44,40 @@ const submitRequest = async (requestData) => {
   }
 
   requestData.category_id = CATEGORY_MAP[requestData.category] || 1;
-
-  // BUSINESS LOGIC: A brand new request cannot have an end date.
-  // This forcibly overrides whatever the frontend form sent.
-  requestData.end_date = null;
-
   const result = await requestRepo.createRequest(requestData);
   return result;
 };
 
 const getRequestById = async (requestId) => {
   const request = await requestRepo.findRequestById(requestId);
-  // Format the single detail view
   return formatForFrontend(request);
 };
 
 const updateRequestStatus = async (requestId, userId, updateData) => {
-  const { new_status, comment, action_type } = updateData;
+  let new_status =
+    updateData.new_status || updateData.status || updateData.newStatus;
+  let action_type = updateData.action_type || updateData.actionType;
+  const comment = updateData.comment || updateData.message || null;
 
-  if (!new_status || !action_type) {
-    throw new Error("New status and action type are required.");
+  // BULLETPROOFING: If the frontend didn't pass a status, fetch the current one so we never throw a 400!
+  if (!new_status) {
+    const currentReq = await requestRepo.findRequestById(requestId);
+    if (!currentReq) throw new Error("Request not found");
+    new_status = currentReq.status || "Pending";
   }
 
-  // 1. Insert the new action into the database timeline
+  if (!action_type) {
+    action_type = "Status change";
+  }
+
   await requestRepo.addTimelineAction({
     requestId,
     performedBy: userId,
     newStatus: new_status,
-    comment: comment || null,
+    comment: comment,
     actionType: action_type,
   });
 
-  // 2. Fetch the fully updated request (which will automatically derive the new status)
-  // so the frontend can immediately display the changes.
   return await getRequestById(requestId);
 };
 
@@ -103,4 +101,5 @@ module.exports = {
   submitRequest,
   getRequestById,
   updateRequestStatus,
+  cancelAndDeleteRequest,
 };

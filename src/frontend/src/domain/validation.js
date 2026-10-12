@@ -96,17 +96,8 @@ export const requestSchema = {
       "Enter a street address or a landmark staff will recognise.",
     ),
   ],
-  startDate: [
-    rules.required("Enter the date the problem started."),
-    rules.notInFuture("The start date cannot be in the future."),
-  ],
-  endDate: [
-    rules.notBefore(
-      "startDate",
-      (start) =>
-        `End date cannot be before the start date (${formatDate(start)}). Leave it empty if the problem is ongoing.`,
-    ),
-  ],
+  // BENNO
+  // Removed start and end date
 };
 
 /** REQ-023, REQ-030: name, email and password only. */
