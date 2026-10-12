@@ -73,5 +73,3 @@
 //     expect(validate({ name: '' }, schema).list).toEqual([{ field: 'name', message: 'required' }])
 //   })
 // })
-import { test } from '@jest/globals';
-test.skip('skipped tests', () => {});

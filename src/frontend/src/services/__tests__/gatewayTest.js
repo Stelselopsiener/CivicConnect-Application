@@ -295,5 +295,3 @@
 //     expect(handler).not.toHaveBeenCalled()
 //   })
 // })
-import { test } from '@jest/globals';
-test.skip('skipped tests', () => {});
