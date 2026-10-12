@@ -7,9 +7,8 @@ on:
     branches: [main, master]
 
 jobs:
-  ci-checks:
+  frontend:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -19,17 +18,43 @@ jobs:
         with:
           node-version: 24
 
-      - name: Frontend Checks (Lint, Test, Audit)
+      - name: Frontend Lint & Audit
         run: |
           cd src/frontend
           npm ci
           npm run lint
-          npm test --watchAll=false
           npm audit --audit-level=high
 
-      - name: Backend Checks (Lint, Test, Audit)
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Backend Lint & Audit
         run: |
           cd src/backend
           npm ci
           npm run lint
           npm audit --audit-level=high
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Run Test Suite
+        run: |
+          npm ci
+          npm test
