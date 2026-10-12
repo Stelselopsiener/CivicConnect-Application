@@ -88,18 +88,6 @@ const handleCancelRequest = async (req, res) => {
       .json({ error: { code: "BAD_REQUEST", message: err.message } });
   }
 };
-// BENNO
-// 5# Change - Added new method called handleCancelRequest
-const handleCancelRequest = async (req, res) => {
-  try {
-    const requestId = req.params.id;
-    const userId = req.user.user_id || req.user.id || req.user._id;
-    const result = await requestService.cancelAndDeleteRequest(requestId, userId);
-    res.status(200).json({ data: result });
-  } catch (err) {
-    res.status(400).json({ error: { code: "BAD_REQUEST", message: err.message } });
-  }
-};
 
 module.exports = {
   handleGetMyRequests,

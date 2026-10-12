@@ -34,16 +34,6 @@ function actualEndedDate(request) {
   return endAction?.date ?? null;
 }
 
-const ENDED_STATUSES = new Set([STATUS.COMPLETED, STATUS.CLOSED, STATUS.REJECTED, STATUS.CANCELLED])
-
-function actualEndedDate(request) {
-  const actions = request.actions ?? []
-  const endAction = [...actions]
-    .reverse()
-    .find((a) => a.statusChanged && ENDED_STATUSES.has(a.newStatus))
-  return endAction?.date ?? null
-}
-
 /** Requester: one request, its plain-language progress and what happens next (REQ-004, REQ-006). */
 export default function RequestDetail({ request, onChanged }) {
   return (
