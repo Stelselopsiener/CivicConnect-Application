@@ -1,24 +1,43 @@
-import { Navigate, Outlet, useLocation } from 'react-router-dom'
-import { useAuth } from '../hooks/useAuth'
-import LoadingScreen from '../components/common/LoadingScreen'
-
 /**
- * Guards a route subtree behind authentication, and optionally a role list.
- * Usage: <Route element={<ProtectedRoute allowedRoles={['staff','admin']} />}>
+ * Route guard — DESIGN PATTERN: Protection Proxy.
+ *
+ * Stands in front of a group of routes and decides whether the real screens may render:
+ * signed out -> sign-in (remembering where the user was going); wrong role -> that role's own
+ * home page, never an "access denied" dead end (REQ-029, PED §10.1).
+ *
+ * This is a usability control. The API checks the JWT and role again on every call (ASR-002).
  */
-export default function ProtectedRoute({ allowedRoles }) {
-  const { isAuthenticated, isLoading, user } = useAuth()
-  const location = useLocation()
+import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
+import { homeFor } from "../domain/navigation";
 
-  if (isLoading) return <LoadingScreen label="Checking your session" />
+export default function ProtectedRoute({ roles }) {
+  const { isAuthenticated, user, signedOut } = useAuth();
+  const location = useLocation();
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace state={{ from: location }} />
-  }
+  if (!isAuthenticated)
+    return (
+      <Navigate
+        to="/sign-in"
+        replace
+        state={signedOut ? null : { from: location }}
+      />
+    );
 
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
-    return <Navigate to="/dashboard" replace />
-  }
+  // Safely extract the role using user_type to match the backend JWT payload
+  const currentRole = user?.user_type || user?.role;
 
-  return <Outlet />
+  if (roles && !roles.includes(currentRole))
+    return <Navigate to={homeFor(currentRole)} replace />;
+  return <Outlet />;
+}
+
+/** "/" and any signed-in visit to an auth page land on the role's own home page. */
+export function RoleHome() {
+  const { user } = useAuth();
+
+  // Safely extract the role using user_type to match the backend JWT payload
+  const currentRole = user?.user_type || user?.role;
+
+  return <Navigate to={homeFor(currentRole)} replace />;
 }

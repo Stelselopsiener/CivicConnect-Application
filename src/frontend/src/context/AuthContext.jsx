@@ -1,66 +1,50 @@
-import { createContext, useCallback, useEffect, useMemo, useState } from 'react'
-import { login as loginRequest, register as registerRequest, fetchCurrentUser } from '../services/authService'
+/**
+ * Session state — DESIGN PATTERN: Provider (React Context).
+ *
+ * One component owns "who is signed in"; any screen reads it with useAuth() instead of having
+ * the user passed down through every layer. Sign-in, sign-out and session expiry all change
+ * state here and nowhere else.
+ */
+import { useCallback, useMemo, useState } from 'react'
+import { authGateway } from '../services'
+import { EVENT } from '../services/events/eventBus'
+import { useEventBus } from '../hooks/useEventBus'
+import { AuthContext } from './authContextObject'
 
-export const AuthContext = createContext(null)
 
-const TOKEN_KEY = 'civicconnect_token'
-const USER_KEY = 'civicconnect_user'
+const SESSION_EVENTS = [EVENT.SESSION_EXPIRED]
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => {
-    const stored = localStorage.getItem(USER_KEY)
-    return stored ? JSON.parse(stored) : null
-  })
-  const [isLoading, setIsLoading] = useState(true)
+  // Rebuilt from the stored JWT, so a page reload keeps the user signed in until it expires.
+  const [user, setUser] = useState(() => authGateway.currentUser())
+  const [sessionExpired, setSessionExpired] = useState(false)
+  // True after a deliberate sign-out, so the next person to sign in on this device starts on
+  // their own home page and is not sent to the previous user's last screen.
+  const [signedOut, setSignedOut] = useState(false)
 
-  // On app load, if a token exists, verify it against the backend and
-  // rehydrate the user rather than trusting stale localStorage data.
-  useEffect(() => {
-    const token = localStorage.getItem(TOKEN_KEY)
-    if (!token) {
-      setIsLoading(false)
-      return
-    }
-    fetchCurrentUser()
-      .then((freshUser) => {
-        setUser(freshUser)
-        localStorage.setItem(USER_KEY, JSON.stringify(freshUser))
-      })
-      .catch(() => {
-        localStorage.removeItem(TOKEN_KEY)
-        localStorage.removeItem(USER_KEY)
-        setUser(null)
-      })
-      .finally(() => setIsLoading(false))
+  const signIn = useCallback(async (credentials) => {
+    const signedIn = await authGateway.signIn(credentials)
+    setSessionExpired(false)
+    setSignedOut(false)
+    setUser(signedIn)
+    return signedIn
   }, [])
 
-  const persistSession = (token, nextUser) => {
-    localStorage.setItem(TOKEN_KEY, token)
-    localStorage.setItem(USER_KEY, JSON.stringify(nextUser))
-    setUser(nextUser)
-  }
-
-  const login = useCallback(async (credentials) => {
-    const { token, user: loggedInUser } = await loginRequest(credentials)
-    persistSession(token, loggedInUser)
-    return loggedInUser
-  }, [])
-
-  const register = useCallback(async (details) => {
-    const { token, user: newUser } = await registerRequest(details)
-    persistSession(token, newUser)
-    return newUser
-  }, [])
-
-  const logout = useCallback(() => {
-    localStorage.removeItem(TOKEN_KEY)
-    localStorage.removeItem(USER_KEY)
+  const signOut = useCallback(() => {
+    authGateway.signOut()
+    setSignedOut(true)
     setUser(null)
   }, [])
 
+  // Observer: the HTTP facade announces a rejected token; the provider reacts.
+  useEventBus(SESSION_EVENTS, () => {
+    setUser(null)
+    setSessionExpired(true)
+  })
+
   const value = useMemo(
-    () => ({ user, isAuthenticated: Boolean(user), isLoading, login, register, logout }),
-    [user, isLoading, login, register, logout]
+    () => ({ user, isAuthenticated: Boolean(user), sessionExpired, signedOut, signIn, signOut }),
+    [user, sessionExpired, signedOut, signIn, signOut],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
