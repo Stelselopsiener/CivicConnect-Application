@@ -55,6 +55,10 @@ const findRequestsByRequester = async (requesterId) => {
   });
 };
 
+// BENNO
+// 1# Change - Ensure start and end date are automatically calculated by the system
+// The $5 and $6 in the VALUES section is replaced with CURRENT_DATE and CURRENT_DATE (with more code)
+//In the RETURNING section, the start and end date is added
 const createRequest = async (requestData) => {
   const insertRequestQuery = `
     INSERT INTO service_request (

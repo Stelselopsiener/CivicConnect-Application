@@ -5,7 +5,9 @@ const CATEGORY_MAP = {
   "Equipment damage": 2,
   "Security Concern": 3,
   "IT support": 4,
-  Maintenance: 5,
+  "Maintenance": 5,
+  // BENNO
+  // Added quotations for maintenace
   "Lost Property": 6,
   Other: 7,
 };
