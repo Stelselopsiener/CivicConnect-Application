@@ -1,4 +1,4 @@
-name: Simple Build Verification
+name: CI
 
 on:
   push:
@@ -19,7 +19,12 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install Dependencies and Build
+      - name: Install Backend Dependencies
+        run: |
+          cd src/backend
+          npm ci
+
+      - name: Install Frontend Dependencies and Build
         run: |
           cd src/frontend
           npm ci
