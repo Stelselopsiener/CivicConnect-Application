@@ -8,7 +8,7 @@
  * These are the UI-layer checks of PED §12.3 (layer 1). The API and the database repeat them
  * (layers 2 and 3); the UI copy exists to give immediate, specific feedback (WCAG 3.3.1/3.3.3).
  */
-import { isKnownCategory } from "./categories";
+import { isKnownCategory } from "./categories.js";
 
 export const TITLE_MAX = 80;
 export const DESCRIPTION_MAX = 1000;
