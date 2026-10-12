@@ -1,22 +1,22 @@
 const requestRepo = require("./repository");
 
 const CATEGORY_MAP = {
-  "Facility Fault": 1,
+  "Facility fault": 1,
   "Equipment damage": 2,
-  "Security Concern": 3,
+  "Security concern": 3,
   "IT support": 4,
-  Maintenance: 5,
-  "Lost Property": 6,
-  Other: 7,
+  "Maintenance": 5,
+  "Lost property": 6,
+  "Other": 7,
 };
 
 const REVERSE_CATEGORY_MAP = {
-  1: "Facility Fault",
+  1: "Facility fault",
   2: "Equipment damage",
-  3: "Security Concern",
+  3: "Security concern",
   4: "IT support",
   5: "Maintenance",
-  6: "Lost Property",
+  6: "Lost property",
   7: "Other",
 };
 
