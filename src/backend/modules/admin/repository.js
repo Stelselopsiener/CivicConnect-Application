@@ -210,7 +210,14 @@ const getOverviewRows = async ({ start_date, end_date, category } = {}) => {
   return rows;
 };
 
-const findAuditTrail = async ({ request_id, search, action_type, start_date, limit = 50, offset = 0 } = {}) => {
+const findAuditTrail = async ({
+  request_id,
+  search,
+  action_type,
+  start_date,
+  limit = 50,
+  offset = 0,
+} = {}) => {
   const conditions = [];
   const values = [];
   let idx = 1;
@@ -231,10 +238,12 @@ const findAuditTrail = async ({ request_id, search, action_type, start_date, lim
     values.push(start_date);
   }
 
-if (search && String(search).trim()) {
+  if (search && String(search).trim()) {
     const rawSearch = String(search).trim();
     const tokens = rawSearch.split(/\s+/).filter(Boolean);
-    const digits = rawSearch.replace(/\D/g, "").replace(/^0+/, "") || rawSearch.replace(/\D/g, "");
+    const digits =
+      rawSearch.replace(/\D/g, "").replace(/^0+/, "") ||
+      rawSearch.replace(/\D/g, "");
 
     const clauses = [];
 

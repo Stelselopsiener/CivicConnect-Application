@@ -1,108 +1,73 @@
 const staffService = require("./service");
 
-const handleGetStaffRequests = async (req, res) => {
+const handleGetWorklist = async (req, res) => {
   try {
-    const { category, status, search, sort } = req.query;
     const staffId = req.user.user_id || req.user.id || req.user._id;
+    // Extract the filters sent by the React frontend
+    const { status, search } = req.query;
 
-    const requests = await staffService.getWorklist(staffId, {
-      category,
-      status,
-      search,
-      sort,
-    });
-
-    return res.status(200).json(requests);
-  } catch (error) {
-    return res.status(500).json({
-      error: {
-        code: "INTERNAL_ERROR",
-        message: error.message || "Failed to fetch staff worklist",
-      },
-    });
+    const result = await staffService.getWorklist(staffId, { status, search });
+    res.status(200).json({ data: result });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ error: { code: "SERVER_ERROR", message: err.message } });
   }
 };
 
-const handleGetStaffMembers = async (req, res) => {
+const handleGetStaffByCategory = async (req, res) => {
   try {
-    const { category_id } = req.query;
-    const members = await staffService.getAvailableStaff(category_id);
-    return res.status(200).json(members);
-  } catch (error) {
-    return res.status(500).json({
-      error: {
-        code: "INTERNAL_ERROR",
-        message: error.message || "Failed to fetch staff members",
-      },
-    });
+    const { category } = req.query;
+    const result = await staffService.getStaffMembers(category);
+    res.status(200).json({ data: result });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ error: { code: "SERVER_ERROR", message: err.message } });
   }
 };
 
 const handleAssignRequest = async (req, res) => {
   try {
-    const requestId = parseInt(req.params.id, 10);
-    const { staff_id } = req.body;
+    const requestId = req.params.id;
     const performedBy = req.user.user_id || req.user.id || req.user._id;
+    const { staff_id } = req.body;
 
-    if (!staff_id) {
-      return res.status(400).json({
-        error: {
-          code: "VALIDATION_ERROR",
-          message: "staff_id is required for assignment",
-        },
-      });
-    }
-
-    const updated = await staffService.assignRequest(
+    const result = await staffService.assignRequest(
       requestId,
       staff_id,
       performedBy,
     );
-    return res.status(200).json(updated);
-  } catch (error) {
-    return res.status(500).json({
-      error: {
-        code: "INTERNAL_ERROR",
-        message: error.message || "Failed to assign service request",
-      },
-    });
+    res.status(200).json({ data: result });
+  } catch (err) {
+    res
+      .status(400)
+      .json({ error: { code: "BAD_REQUEST", message: err.message } });
   }
 };
 
 const handleUpdateCategory = async (req, res) => {
   try {
-    const requestId = parseInt(req.params.id, 10);
-    const { category_id } = req.body;
+    const requestId = req.params.id;
     const performedBy = req.user.user_id || req.user.id || req.user._id;
+    const { category } = req.body;
 
-    if (!category_id) {
-      return res.status(400).json({
-        error: {
-          code: "VALIDATION_ERROR",
-          message: "category_id is required for category correction",
-        },
-      });
-    }
-
-    const updated = await staffService.correctCategory(
+    const result = await staffService.updateCategory(
       requestId,
-      category_id,
+      category,
       performedBy,
     );
-    return res.status(200).json(updated);
-  } catch (error) {
-    return res.status(500).json({
-      error: {
-        code: "INTERNAL_ERROR",
-        message: error.message || "Failed to correct request category",
-      },
-    });
+    res.status(200).json({ data: result });
+  } catch (err) {
+    res
+      .status(400)
+      .json({ error: { code: "BAD_REQUEST", message: err.message } });
   }
 };
 
 module.exports = {
-  handleGetStaffRequests,
-  handleGetStaffMembers,
+  handleGetWorklist,
+  handleGetStaffByCategory,
   handleAssignRequest,
   handleUpdateCategory,
 };

@@ -3,18 +3,56 @@ const pool = require("../../config/db");
 const findRequestsByRequester = async (requesterId) => {
   const query = `
     SELECT 
-      service_request_id,
-      requester_id,
-      category_id,
-      title,
-      description,
-      street_address
-    FROM service_request
-    WHERE requester_id = $1;
+      sr.service_request_id,
+      sr.requester_id,
+      sr.category_id,
+      sr.title,
+      sr.description,
+      sr.street_address,
+      sr.start_date AS created_at,
+      a_latest.name AS raw_status,
+      act.date AS last_action_date,
+      act.action_id AS last_action_id
+    FROM service_request sr
+    LEFT JOIN LATERAL (
+      SELECT a.status_id, a.date, a.action_id
+      FROM action a
+      WHERE a.service_request_id = sr.service_request_id
+      ORDER BY a.date DESC, a.action_id DESC
+      LIMIT 1
+    ) act ON true
+    LEFT JOIN action_status a_latest ON act.status_id = a_latest.status_id
+    WHERE sr.requester_id = $1
+    ORDER BY sr.service_request_id DESC;
   `;
 
   const { rows } = await pool.query(query, [requesterId]);
-  return rows;
+
+  const statusMap = {
+    pending: "Pending",
+    accepted: "Accepted",
+    assigned: "Assigned",
+    in_progress: "In Progress",
+    completed: "Completed",
+    closed: "Closed",
+    rejected: "Rejected",
+  };
+
+  return rows.map((row) => {
+    const mappedStatus =
+      statusMap[(row.raw_status || "").toLowerCase().replace(/\s+/g, "_")] ||
+      "Pending";
+    const actions = row.last_action_date
+      ? [
+          {
+            action_id: row.last_action_id,
+            date: row.last_action_date,
+          },
+        ]
+      : [];
+
+    return { ...row, status: mappedStatus, actions };
+  });
 };
 
 // BENNO
@@ -32,16 +70,13 @@ const createRequest = async (requestData) => {
       end_date,
       street_address
     )
-VALUES (
-      $1, 
-      $2, 
-      $3, 
-      $4, 
+    VALUES (
+      $1, $2, $3, $4, 
       CURRENT_DATE,
       CURRENT_DATE + (SELECT target_days FROM category WHERE category_id = $2),
       $5
     )
-      RETURNING service_request_id, start_date, end_date;
+    RETURNING service_request_id, start_date, end_date;
   `;
 
   const { rows } = await pool.query(insertRequestQuery, [
@@ -49,8 +84,6 @@ VALUES (
     requestData.category_id,
     requestData.title,
     requestData.description,
-    // BENNO
-    // Removed start and end dates
     requestData.street_address,
   ]);
   const serviceRequestId = rows[0].service_request_id;
@@ -59,17 +92,18 @@ VALUES (
     `INSERT INTO action (service_request_id, performed_by, date, comment, status_id, action_type_id)
      VALUES (
        $1, $2, NOW(), $3,
-       (SELECT status_id FROM action_status WHERE name = 'pending'),
-       (SELECT action_type_id FROM action_type WHERE name = 'submitted')
+       (SELECT status_id FROM action_status WHERE LOWER(name) = 'pending' LIMIT 1),
+       (SELECT action_type_id FROM action_type WHERE LOWER(name) = 'submitted' LIMIT 1)
      )`,
     [
       serviceRequestId,
       requestData.requester_id,
-      requestData.title ? `Submitted: ${requestData.title}` : "Request submitted",
+      requestData.title
+        ? `Submitted: ${requestData.title}`
+        : "Request submitted",
     ],
   );
-  // BENNO
-  // #2 Change - For the return section, the start and end date was added
+
   return {
     service_request_id: rows[0].service_request_id,
     start_date: rows[0].start_date,
@@ -79,27 +113,32 @@ VALUES (
 };
 
 const findRequestById = async (requestId) => {
-  // 1. Fetch the core request
   const query = `
-    SELECT *
-    FROM service_request
-    WHERE service_request_id = $1;
+    SELECT 
+      sr.*,
+      u.name AS requester_name,
+      u.email AS requester_email
+    FROM service_request sr
+    LEFT JOIN "user" u ON sr.requester_id = u.user_id
+    WHERE sr.service_request_id = $1;
   `;
   const { rows } = await pool.query(query, [requestId]);
   const request = rows[0];
 
   if (!request) return null;
+  request.created_at = request.start_date;
 
-  // 2. Fetch the timeline (actions) so the frontend doesn't crash
-  const timelineQuery = `
+  const actionsQuery = `
     SELECT 
       a.action_id,
       a.date,
       a.comment,
       ast.name AS status,
       atp.name AS action_type,
-      u.name AS performed_by_name,
-      staff.name AS assigned_staff_name
+      a.performed_by AS staff_id,         
+      u.name AS staff_name,               
+      a.staff_id AS assigned_staff_id,    
+      staff.name AS assigned_staff_name   
     FROM action a
     LEFT JOIN action_status ast ON a.status_id = ast.status_id
     LEFT JOIN action_type atp ON a.action_type_id = atp.action_type_id
@@ -108,33 +147,71 @@ const findRequestById = async (requestId) => {
     WHERE a.service_request_id = $1
     ORDER BY a.date ASC, a.action_id ASC;
   `;
-  const timelineResult = await pool.query(timelineQuery, [requestId]);
+  const actionsResult = await pool.query(actionsQuery, [requestId]);
 
-  // Attach the timeline to the request object
-  request.timeline = timelineResult.rows;
+  const statusMap = {
+    pending: "Pending",
+    accepted: "Accepted",
+    assigned: "Assigned",
+    in_progress: "In Progress",
+    completed: "Completed",
+    closed: "Closed",
+    rejected: "Rejected",
+    cancelled: "Cancelled",
+  };
 
-  // 3. Derive the current status from the latest action (or default to Pending)
-  if (request.timeline.length > 0) {
-    const latestAction = request.timeline[request.timeline.length - 1];
+  const actionTypeMap = {
+    submitted: "Submitted",
+    status_change: "Status change",
+    comment: "Comment added",
+    assigned: "Assigned",
+    category_update: "Category corrected",
+  };
 
-    // Safely map raw database status strings to the strict CivicConnect UI strings
-    const statusMap = {
-      pending: "Pending",
-      accepted: "Accepted",
-      assigned: "Assigned",
-      in_progress: "In Progress",
-      completed: "Completed",
-      closed: "Closed",
-      rejected: "Rejected",
+  let runningStatus = "Pending";
+  request.actions = actionsResult.rows.map((action) => {
+    const rawStatus = (action.status || "").toLowerCase().replace(/\s+/g, "_");
+    const rawType = (action.action_type || "")
+      .toLowerCase()
+      .replace(/\s+/g, "_");
+
+    const mappedStatus = statusMap[rawStatus] || action.status;
+    let mappedType = actionTypeMap[rawType] || action.action_type;
+
+    // Check if the status actually changed to force a UI update
+    const isStateChange =
+      (mappedStatus && mappedStatus !== runningStatus) ||
+      mappedType === "Status change" ||
+      mappedType === "Assigned" ||
+      mappedType === "Category corrected";
+
+    if (isStateChange && mappedType === "Comment added") {
+      mappedType = "Status change";
+    }
+
+    const actionDto = {
+      ...action,
+      status: mappedStatus,
+      action_type: mappedType,
+      new_status: isStateChange ? mappedStatus : null,
+      previous_status: isStateChange ? runningStatus : null,
     };
 
-    const rawStatus = (latestAction.status || "").toLowerCase();
-    request.status = statusMap[rawStatus] || latestAction.status;
-    request.assigned_staff_name = latestAction.assigned_staff_name;
+    if (mappedStatus && isStateChange) {
+      runningStatus = mappedStatus;
+    }
+
+    return actionDto;
+  });
+
+  if (request.actions.length > 0) {
+    const latestAction = request.actions[request.actions.length - 1];
+    request.status = latestAction.status;
+    request.staff_id = latestAction.assigned_staff_id;
+    request.staff_name = latestAction.assigned_staff_name;
   } else {
     request.status = "Pending";
   }
-
   return request;
 };
 
@@ -145,37 +222,49 @@ const addTimelineAction = async ({
   comment,
   actionType,
 }) => {
-  // Map strict React UI strings back to lowercase database strings
+  // Fully lowercase, case-insensitive mapping
   const dbStatusMap = {
-    Pending: "pending",
-    Accepted: "accepted",
-    Assigned: "assigned",
-    "In Progress": "in_progress",
-    Completed: "completed",
-    Closed: "closed",
-    Rejected: "rejected",
+    pending: "pending",
+    accepted: "accepted",
+    assigned: "assigned",
+    "in progress": "in_progress",
+    in_progress: "in_progress",
+    completed: "completed",
+    closed: "closed",
+    rejected: "rejected",
+    cancelled: "cancelled",
   };
 
-const dbActionMap = {
-    "Status change": "status_change",
-    "Comment added": "comment",
-    "Submitted": "submitted",
-    "Assigned": "assigned",
-    "Category corrected": "category_update",
+  const dbActionMap = {
+    "status change": "status_change",
+    status_change: "status_change",
+    "comment added": "comment",
+    comment_added: "comment",
+    comment: "comment",
+    submitted: "submitted",
+    assigned: "assigned",
+    "category corrected": "category_update",
+    category_update: "category_update",
   };
 
-  const statusName = dbStatusMap[newStatus] || "pending";
-  const actionTypeName = dbActionMap[actionType] || actionType?.toLowerCase?.().replace(/\s+/g, "_") || "comment";
+  // Convert the frontend input to lowercase before checking the dictionary
+  const rawNewStatus = String(newStatus).toLowerCase().trim();
+  const rawActionType = String(actionType).toLowerCase().trim();
 
+  const safeStatus = dbStatusMap[rawNewStatus] || "pending";
+  const safeAction = dbActionMap[rawActionType] || "comment";
+
+  // Use LOWER(name) to guarantee a match against the PostgreSQL column
   const insertActionQuery = `
-    INSERT INTO action (service_request_id, performed_by, date, comment, status_id, action_type_id)
+    INSERT INTO action (service_request_id, performed_by, staff_id, date, comment, status_id, action_type_id)
     VALUES (
       $1, 
       $2, 
+      (SELECT staff_id FROM action WHERE service_request_id = $1 AND staff_id IS NOT NULL ORDER BY date DESC, action_id DESC LIMIT 1),
       NOW(), 
-      $3,
-      (SELECT status_id FROM action_status WHERE name = $4),
-      (SELECT action_type_id FROM action_type WHERE name = $5)
+      $3, 
+      (SELECT status_id FROM action_status WHERE LOWER(name) = $4 LIMIT 1), 
+      (SELECT action_type_id FROM action_type WHERE LOWER(name) = $5 LIMIT 1)
     )
     RETURNING action_id;
   `;
@@ -184,36 +273,22 @@ const dbActionMap = {
     requestId,
     performedBy,
     comment,
-    statusName,
-    actionTypeName,
+    safeStatus,
+    safeAction,
   ]);
   return true;
 };
 
-// BENNO
-// 3# Change - New method called deleteRequestIfPending
 const deleteRequestIfPending = async (requestId, requesterId) => {
   const query = `
     DELETE FROM service_request sr
-    WHERE sr.service_request_id = $1 
-      AND sr.requester_id = $2 
+    WHERE sr.service_request_id = $1 AND sr.requester_id = $2 
       AND (
-        -- Option A: No actions exist yet (brand new request)
-        NOT EXISTS (
-          SELECT 1 FROM action a WHERE a.service_request_id = sr.service_request_id
-        )
-        OR
-        -- Option B: The latest action on this request has a 'pending' status
-        EXISTS (
-          SELECT 1 FROM action a
-          JOIN action_status ast ON a.status_id = ast.status_id
-          WHERE a.service_request_id = sr.service_request_id
-            AND LOWER(ast.name) = 'pending'
-            AND a.date = (
-              SELECT MAX(a2.date) 
-              FROM action a2 
-              WHERE a2.service_request_id = sr.service_request_id
-            )
+        NOT EXISTS (SELECT 1 FROM action a WHERE a.service_request_id = sr.service_request_id)
+        OR EXISTS (
+          SELECT 1 FROM action a JOIN action_status ast ON a.status_id = ast.status_id
+          WHERE a.service_request_id = sr.service_request_id AND LOWER(ast.name) = 'pending'
+            AND a.date = (SELECT MAX(a2.date) FROM action a2 WHERE a2.service_request_id = sr.service_request_id)
         )
       )
     RETURNING sr.service_request_id;
@@ -227,5 +302,5 @@ module.exports = {
   createRequest,
   findRequestById,
   addTimelineAction,
-  deleteRequestIfPending
+  deleteRequestIfPending,
 };

@@ -13,10 +13,10 @@ const STATUS_TO_UI = {
 };
 
 const ACTION_TYPE_UI_TO_DB = {
-  "Submitted": "submitted",        
+  Submitted: "submitted",
   "Status change": "status_change",
-  "Comment added": "comment",        
-  "Assigned": "assigned",
+  "Comment added": "comment",
+  Assigned: "assigned",
   "Category corrected": "category_update",
 };
 
@@ -38,7 +38,13 @@ const normalizeCategory = (name) => {
     "lost property": "Lost property",
     other: "Other",
   };
-  return map[String(name ?? "").trim().toLowerCase()] ?? name;
+  return (
+    map[
+      String(name ?? "")
+        .trim()
+        .toLowerCase()
+    ] ?? name
+  );
 };
 
 const formatRequest = (row) => {
@@ -64,7 +70,9 @@ const getOverview = async (filters = {}) => {
   const closedRows = rows.filter((r) => r.status_name === "closed");
 
   const completionDays = rows
-    .map((r) => (r.days_to_complete != null ? Number(r.days_to_complete) : null))
+    .map((r) =>
+      r.days_to_complete != null ? Number(r.days_to_complete) : null,
+    )
     .filter((d) => d != null)
     .sort((a, b) => a - b);
 
@@ -85,7 +93,10 @@ const getOverview = async (filters = {}) => {
       const cur = map.get(key) ?? { category: key, count: 0, oldest_days: 0 };
       cur.count += 1;
       if (withOldest) {
-        cur.oldest_days = Math.max(cur.oldest_days, Number(row.days_overdue) || 0);
+        cur.oldest_days = Math.max(
+          cur.oldest_days,
+          Number(row.days_overdue) || 0,
+        );
       }
       map.set(key, cur);
     }
@@ -143,7 +154,7 @@ const getAuditTrail = async (filters = {}) => {
     offset: filters.offset ?? 0,
   });
 
-return rows.map((r) => ({
+  return rows.map((r) => ({
     ...r,
     status: STATUS_TO_UI[r.status] ?? r.status,
     previous_status: STATUS_TO_UI[r.previous_status] ?? r.previous_status,

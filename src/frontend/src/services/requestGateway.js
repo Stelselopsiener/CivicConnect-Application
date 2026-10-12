@@ -194,7 +194,9 @@ export function createRequestGateway(transport) {
     },
 
     async updateUserType(userId, userType) {
-      return await transport.patch(`/admin/users/${userId}/type`, { user_type: userType });
-    }
+      return await transport.patch(`/admin/users/${userId}/type`, {
+        user_type: userType,
+      });
+    },
   };
 }

@@ -95,7 +95,7 @@ export const requestSchema = {
     rules.required(
       "Enter a street address or a landmark staff will recognise.",
     ),
-  ]
+  ],
   // BENNO
   // Removed start and end date
 };

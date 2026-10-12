@@ -14,7 +14,7 @@ app.use(express.json());
 app.use("/api/v1/requests", requestRoutes);
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/staff", staffRoutes);
-app.use('/api/v1/admin', adminRoutes);
+app.use("/api/v1/admin", adminRoutes);
 
 const PORT = process.env.PORT || 3000;
 

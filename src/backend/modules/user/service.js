@@ -63,6 +63,7 @@ const loginUser = async (email, password) => {
   const token = jwt.sign(
     {
       user_id: user.user_id,
+      name: user.name,
       email: user.email,
       user_type: user.user_type, // Exposes role to API middleware
       category: user.category, // Exposes department string to API middleware

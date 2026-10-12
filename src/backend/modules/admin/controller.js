@@ -23,8 +23,16 @@ const handleGetOversight = async (req, res) => {
 
 const handleGetAllRequests = async (req, res) => {
   try {
-    const { status, category, category_id, search, start_date, end_date, limit, offset } =
-      req.query;
+    const {
+      status,
+      category,
+      category_id,
+      search,
+      start_date,
+      end_date,
+      limit,
+      offset,
+    } = req.query;
     const result = await adminService.getAllRequests({
       status,
       category,
@@ -45,7 +53,15 @@ const handleGetAllRequests = async (req, res) => {
 
 const handleGetAuditTrail = async (req, res) => {
   try {
-    const { request_id, search, action_type, start_date, startDate, limit, offset } = req.query;
+    const {
+      request_id,
+      search,
+      action_type,
+      start_date,
+      startDate,
+      limit,
+      offset,
+    } = req.query;
     const result = await adminService.getAuditTrail({
       request_id,
       search,
