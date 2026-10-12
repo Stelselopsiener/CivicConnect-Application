@@ -24,7 +24,7 @@ jobs:
           cd src/frontend
           npm ci
           npm run lint
-          npm test -- --ci --watchAll=false
+          npm test --watchAll=false
           npm audit --audit-level=high
 
       - name: Backend Checks (Lint, Test, Audit)

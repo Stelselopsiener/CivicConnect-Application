@@ -60,13 +60,6 @@ export function validate(values, schema) {
   return { valid: list.length === 0, errors, list };
 }
 
-const formatDate = (iso) =>
-  new Date(`${iso}T00:00:00`).toLocaleDateString("en-ZA", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-
 /** REQ-001 to REQ-003, CR-001 (single street address), CR-002 (no contact number). */
 export const requestSchema = {
   category: [

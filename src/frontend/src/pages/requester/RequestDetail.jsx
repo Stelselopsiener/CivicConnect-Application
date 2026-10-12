@@ -123,7 +123,7 @@ function NextStep({ request }) {
  * Cancel is always shown while the request is open; when it is not allowed the button is
  * disabled with the reason, rather than silently disappearing (wireframe note 3, D10).
  */
-function CancelCard({ request, onChanged }) {
+function CancelCard({ request }) {
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
