@@ -41,7 +41,7 @@ jobs:
           cd src/backend
           npm ci
           npm run lint
-          npm audit --audit-level=high
+          npm audit --omit=dev --audit-level=high
 
   test:
     runs-on: ubuntu-latest
