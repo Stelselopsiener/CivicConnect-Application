@@ -31,26 +31,6 @@ const person = (nested, id, name, email) => {
   };
 };
 
-const ACTION_TYPE_DB_TO_UI = {
-  submitted: "Submitted",
-  created: "Submitted",
-  status_change: "Status change",
-  comment: "Comment added",
-  comment_added: "Comment added",
-  assigned: "Assigned",
-  category_update: "Category corrected",
-};
-
-const STATUS_DB_TO_UI = {
-  pending: "Pending",
-  accepted: "Accepted",
-  in_progress: "In Progress",
-  completed: "Completed",
-  closed: "Closed",
-  rejected: "Rejected",
-  cancelled: "Cancelled",
-};
-
 export function toAction(dto) {
   const rawPrev = dto.previous_status ?? null;
   const rawNew = dto.new_status ?? null;

@@ -1,0 +1,12 @@
+{
+  "name": "civicconnect-application",
+  "version": "3.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest"
+  },
+  "devDependencies": {
+    "cross-env": "^10.1.0",
+    "jest": "^30.5.2"
+  }
+}
