@@ -20,6 +20,7 @@
     "express": "^5.2.1",
     "express-rate-limit": "^8.7.1",
     "jsonwebtoken": "^9.0.3",
+    "nodemailer": "^10.1.0",
     "pg": "^8.23.0"
   },
   "devDependencies": {
@@ -28,5 +29,3 @@
     "supertest": "^7.3.1"
   }
 }
-
-
