@@ -1,0 +1,20 @@
+{
+  "name": "civicconnect-application",
+  "version": "3.0.0",
+  "type": "module",
+  "scripts": {
+    "test:backend": "cross-env NODE_OPTIONS=--experimental-vm-modules jest",
+    "test:frontend": "npm --prefix src/frontend test",
+    "test": "npm run test:backend && npm run test:frontend",
+    "postinstall": "npm ci --prefix src/frontend"
+  },
+  "devDependencies": {
+    "cross-env": "^10.1.0",
+    "jest": "^30.5.2"
+  },
+  "dependencies": {
+    "dotenv": "^18.0.7",
+    "pg": "^8.23.1",
+    "vitest": "^5.0.4"
+  }
+}

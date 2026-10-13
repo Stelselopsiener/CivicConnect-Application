@@ -10,7 +10,6 @@ import {
   requestSchema,
   validate,
 } from "../../domain/validation";
-import { toDateInput } from "../../utils/format";
 import Banner from "../../components/common/Banner";
 import Button from "../../components/common/Button";
 import ErrorSummary from "../../components/common/ErrorSummary";
