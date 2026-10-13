@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { requestSchema, validate } from "../../src/frontend/src/domain/validation.js";
+import { requestSchema, validate } from "../src/domain/validation.js";
 
 const requestWithEmptyFields = {
     category: "",
