@@ -22,10 +22,8 @@ const registerUser = async (userData) => {
   const passwordHash = await bcrypt.hash(password, saltRounds);
 
   // 4. Generate the verification token (CR-008)
-  // We generate a plain token to send to the user's email...
   const plainToken = crypto.randomBytes(32).toString("hex");
 
-  // ...but we only store the hashed version in the database for security
   const tokenHash = crypto
     .createHash("sha256")
     .update(plainToken)
@@ -39,7 +37,6 @@ const registerUser = async (userData) => {
     token_hash: tokenHash,
   });
 
-  // Return the created user and the plain token (which the controller will eventually email)
   return {
     user: newUser,
     verification_token: plainToken,
@@ -59,14 +56,21 @@ const loginUser = async (email, password) => {
     throw new Error("Invalid email or password.");
   }
 
+  // FIX FOR TC-006: Block login if email is not verified
+  if (user.email_verified === false) {
+    const error = new Error("EMAIL_NOT_VERIFIED");
+    error.code = "EMAIL_NOT_VERIFIED";
+    throw error;
+  }
+
   // 3. Generate the JWT (expires in 24 hours)
   const token = jwt.sign(
     {
       user_id: user.user_id,
       name: user.name,
       email: user.email,
-      user_type: user.user_type, // Exposes role to API middleware
-      category: user.category, // Exposes department string to API middleware
+      user_type: user.user_type,
+      category: user.category,
     },
     process.env.JWT_SECRET,
     { expiresIn: "24h" },
@@ -77,8 +81,8 @@ const loginUser = async (email, password) => {
       user_id: user.user_id,
       name: user.name,
       email: user.email,
-      user_type: user.user_type, // Exposes role to React router
-      category: user.category, // Exposes department string to React UI
+      user_type: user.user_type,
+      category: user.category,
     },
     token,
   };
