@@ -5,7 +5,8 @@
   "scripts": {
     "test:backend": "cross-env NODE_OPTIONS=--experimental-vm-modules jest",
     "test:frontend": "npm --prefix src/frontend test",
-    "test": "npm run test:backend && npm run test:frontend"
+    "test": "npm run test:backend && npm run test:frontend",
+    "postinstall": "npm ci --prefix src/frontend"
   },
   "devDependencies": {
     "cross-env": "^10.1.0",
