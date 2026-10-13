@@ -39,3 +39,5 @@ jobs:
         run: |
           cd src/backend
           npm install
+          npm ci
+          npm test -- --runInBand 

@@ -1,73 +1,24 @@
-const userService = require("./service");
-
-const handleRegisterUser = async (req, res) => {
-  try {
-    const { name, email, password } = req.body;
-
-    const result = await userService.registerUser({ name, email, password });
-
-    // Return 201 Created on successful registration
-    res.status(201).json({
-      message:
-        "User registered successfully. Please check your email to verify your account.",
-      data: result,
-    });
-  } catch (err) {
-    // Return 400 Bad Request for validation or duplicate user errors
-    res
-      .status(400)
-      .json({ error: { code: "BAD_REQUEST", message: err.message } });
-  }
-};
-
-const handleLoginUser = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({
-        error: {
-          code: "BAD_REQUEST",
-          message: "Email and password are required.",
-        },
-      });
+function createUserController(service, logger = console) {
+  const handle = (operation, status = 200) => async (req, res) => {
+    try { res.status(status).json(await operation(req.body || {})); }
+    catch (error) {
+      const status = error.status || 500;
+      if (status >= 500) {
+        // SQLSTATE/error category only: no query, credentials, recipient or provider message.
+        const code = typeof error.code === 'string' && /^[A-Z0-9]{5}$/.test(error.code) ? error.code : 'UNKNOWN';
+        logger.error?.(`AUTH_REQUEST_FAILED (${code}): inspect the database schema, defaults and constraints.`);
+      }
+      res.status(status).json({ error: {
+        code: error.code && error.status ? error.code : 'INTERNAL_ERROR',
+        message: error.status ? error.message : 'The request could not be completed. Please try again.',
+      } });
     }
-
-    const result = await userService.loginUser(email, password);
-
-    res.status(200).json({
-      message: "Login successful.",
-      data: result,
-    });
-  } catch (err) {
-    // 401 Unauthorized for bad credentials
-    res
-      .status(401)
-      .json({ error: { code: "UNAUTHORIZED", message: err.message } });
-  }
-};
-
-// Add this below handleLoginUser:
-
-const handleVerifyEmail = async (req, res) => {
-  try {
-    const { token } = req.body;
-
-    if (!token) {
-      return res
-        .status(400)
-        .json({
-          error: { code: "BAD_REQUEST", message: "Token is required." },
-        });
-    }
-
-    const result = await userService.verifyEmail(token);
-    res.status(200).json(result);
-  } catch (err) {
-    res
-      .status(400)
-      .json({ error: { code: "BAD_REQUEST", message: err.message } });
-  }
-};
-
-module.exports = { handleRegisterUser, handleLoginUser, handleVerifyEmail };
+  };
+  return {
+    handleRegisterUser: handle((body) => service.registerUser(body), 201),
+    handleLoginUser: handle(async (body) => ({ data: await service.loginUser(body.email, body.password) })),
+    handleVerifyEmail: handle((body) => service.verifyEmail(body)),
+    handleResendVerification: handle((body) => service.resendVerification(body.email)),
+  };
+}
+module.exports = { createUserController };

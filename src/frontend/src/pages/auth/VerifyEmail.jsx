@@ -1,57 +1,108 @@
 import { useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { authGateway } from '../../services'
 import Banner from '../../components/common/Banner'
 import Button from '../../components/common/Button'
+import Field from '../../components/common/Field'
 import PageHeader from '../../components/common/PageHeader'
 
-/**
- * Landing page of the emailed link. The token is only used when the person presses the button
- * (a POST), so automatic mail scanners that open links cannot use it up (D13, OWASP).
- */
 export default function VerifyEmail() {
-  const [params] = useSearchParams()
+  const { state } = useLocation()
   const navigate = useNavigate()
-  const token = params.get('token')
+
+  const email = state?.email?.trim().toLowerCase() ?? ''
+  const [code, setCode] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
 
-  const confirm = async () => {
+  const confirm = async (event) => {
+    event.preventDefault()
     setBusy(true)
     setError(null)
+
     try {
-      await authGateway.verifyEmail(token)
-      navigate('/sign-in', { replace: true, state: { verified: true } })
+      await authGateway.verifyEmail(email, code)
+
+      navigate('/sign-in', {
+        replace: true,
+        state: { verified: true, email },
+      })
     } catch (failure) {
       setError(failure)
+    } finally {
       setBusy(false)
     }
   }
 
+  if (!email) {
+    return <Navigate to="/sign-in" replace />
+  }
+
   return (
-    <div className="flex max-w-lg flex-col gap-5">
+    <form onSubmit={confirm} className="flex max-w-lg flex-col gap-5">
       <PageHeader title="Confirm your email" />
-      {!token && (
-        <Banner tone="error" title="This link is incomplete">
-          Open the link from your confirmation email again, or copy the whole address into the browser.
-        </Banner>
-      )}
+
+      <p className="text-ink-soft">
+        Enter the latest six-digit code from your email.
+        It expires after 10 minutes.
+      </p>
+
+      <p className="text-ink-soft">
+        Confirming the email address: <strong>{email}</strong>
+      </p>
+
       {error && (
-        <Banner tone="error" title="This link can no longer be used">
-          {error.message} Sign in with your email and password to be offered a new link.
-        </Banner>
+        <Banner tone="error">{error.message}</Banner>
       )}
-      {token && !error && <p className="text-lg text-ink-soft">Press the button to activate your CivicConnect account.</p>}
-      <div className="flex flex-wrap gap-3">
-        {token && !error && (
-          <Button onClick={confirm} busy={busy} busyLabel="Confirming…">
-            Confirm my email
-          </Button>
+
+      <Field
+        id="verification-code"
+        label="Six-digit code"
+        required
+      >
+        {(a11y) => (
+          <input
+            {...a11y}
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            pattern="[0-9]{6}"
+            maxLength={6}
+            required
+            className="input"
+            value={code}
+            onChange={(event) =>
+              setCode(
+                event.target.value.replace(/\D/g, '').slice(0, 6)
+              )
+            }
+          />
         )}
-        <Button as={Link} to="/sign-in" variant="secondary">
-          Go to sign in
-        </Button>
-      </div>
-    </div>
+      </Field>
+
+      <Button
+        type="submit"
+        busy={busy}
+        busyLabel="Confirming…"
+      >
+        Confirm my email
+      </Button>
+
+      <Link
+        className="link"
+        to="/check-email"
+        state={{ email }}
+      >
+        Request another code
+      </Link>
+
+      <Link
+        className="link"
+        to="/sign-in"
+        state={{ email }}
+      >
+        Go to sign in
+      </Link>
+    </form>
   )
 }
