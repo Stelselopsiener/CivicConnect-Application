@@ -39,7 +39,8 @@ jobs:
       - name: Backend Lint & Audit
         run: |
           cd src/backend
-          npm ci
+          # 2. Changed from 'npm ci' to 'npm install' to fix the lockfile crash
+          npm install
           npm run lint
           npm audit --omit=dev --audit-level=high
 
@@ -55,6 +56,17 @@ jobs:
           node-version: 24
 
       - name: Run Test Suite
+        # 3. Added environment variables to pass your secure passwords to the tests
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          SMTP_FROM: ${{ secrets.SMTP_FROM }}
         run: |
-          npm ci
+          # 4. Added 'cd src/backend' so the runner actually navigates to your backend folder
+          cd src/backend
+          # 5. Changed to 'npm install' here as well
+          npm install
           npm test
