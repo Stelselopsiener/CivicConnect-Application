@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
-import { authGateway, isDemoMode } from "../../services";
+import { authGateway } from "../../services";
 import { ERROR_CODE } from "../../services/AppError";
-import { DEMO_ACCOUNTS, DEMO_PASSWORD } from "../../services/mock/mockDb";
 import { homeFor } from "../../domain/navigation";
 import {
   PASSWORD_MIN,
@@ -139,11 +138,10 @@ function SignInForm() {
   const resend = async () => {
     setResending(true);
     try {
-      const response = await authGateway.resendVerification(form.email);
+      await authGateway.resendVerification(form.email);
       navigate("/check-email", {
         state: {
           email: form.email,
-          demoToken: response?.demo_verification_token,
           resent: true,
         },
       });
@@ -170,7 +168,8 @@ function SignInForm() {
       )}
       {unverified && (
         <Banner tone="error" title="Please confirm your email first">
-          We sent a link to {form.email} when you registered.{" "}
+          Check your inbox for your verification code.{" "}
+          <Link to="/verify-email" state={{ email: form.email }} className="link">Enter your code</Link>{" or "}
           <button
             type="button"
             onClick={resend}
@@ -223,30 +222,7 @@ function SignInForm() {
         dashboard.
       </p>
 
-      {isDemoMode && (
-        <div className="rounded-md border border-signal-400 bg-signal-100/60 p-4">
-          <p className="font-semibold">Demo accounts</p>
-          <p className="text-sm text-ink-soft">
-            Choose one to fill in the form, then sign in.
-          </p>
-          <ul className="mt-3 flex flex-col gap-2">
-            {DEMO_ACCOUNTS.map((account) => (
-              <li key={account.email}>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setForm({ email: account.email, password: DEMO_PASSWORD })
-                  }
-                  className="flex w-full cursor-pointer items-center justify-between gap-3 rounded-md border border-line-strong bg-raised px-3 py-2 text-left hover:border-ink"
-                >
-                  <span className="font-medium">{account.name}</span>
-                  <span className="text-sm text-ink-soft">{account.label}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+
     </form>
   );
 }
@@ -277,11 +253,10 @@ function RegisterForm() {
     if (!result.valid) return;
     setBusy(true);
     try {
-      const response = await authGateway.register(form);
+      await authGateway.register(form);
       navigate("/check-email", {
         state: {
           email: form.email.trim().toLowerCase(),
-          demoToken: response?.demo_verification_token,
         },
       });
     } catch (error) {
@@ -311,7 +286,7 @@ function RegisterForm() {
         label="Email address"
         required
         error={errors.email}
-        hint="We will send a confirmation link to this address."
+        hint="We will send a six-digit verification code to this address."
       >
         {(a11y) => (
           <input

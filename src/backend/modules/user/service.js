@@ -1,115 +1,96 @@
-const bcrypt = require("bcrypt");
-const crypto = require("crypto");
-const userRepo = require("./repository");
-const jwt = require("jsonwebtoken");
+const crypto = require('node:crypto');
 
-const registerUser = async (userData) => {
-  const { name, email, password } = userData;
+const TTL_MINUTES = 10;
+const GENERIC = { message: 'If this address is eligible, check its inbox for a CivicConnect email. You can request a new code if needed.' };
+const fault = (status, code, message) => Object.assign(new Error(message), { status, code });
 
-  // 1. Validate mandatory fields
-  if (!name || !email || !password) {
-    throw new Error("Name, email, and password are required.");
+function normaliseEmail(value) {
+  if (typeof value !== 'string' || value.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())) {
+    throw fault(400, 'BAD_REQUEST', 'Enter a valid email address.');
   }
+  return value.trim().toLowerCase();
+}
 
-  // 2. Check if user already exists
-  const existingUser = await userRepo.findUserByEmail(email);
-  if (existingUser) {
-    throw new Error("A user with this email already exists.");
+// Dependencies are supplied once in server.js; no SMTP or SQL in business logic.
+function createUserService({ repo, mailSender, bcrypt, jwt, jwtSecret, verificationSecret, logger = console }) {
+  if (!jwtSecret || !verificationSecret || verificationSecret.length < 32) {
+    throw new Error('JWT_SECRET and a separate VERIFICATION_SECRET (at least 32 characters) are required.');
   }
-
-  // 3. Hash the password (cost factor of 10 is standard)
-  const saltRounds = 10;
-  const passwordHash = await bcrypt.hash(password, saltRounds);
-
-  // 4. Generate the verification token (CR-008)
-  // We generate a plain token to send to the user's email...
-  const plainToken = crypto.randomBytes(32).toString("hex");
-
-  // ...but we only store the hashed version in the database for security
-  const tokenHash = crypto
-    .createHash("sha256")
-    .update(plainToken)
-    .digest("hex");
-
-  // 5. Save everything via the repository
-  const newUser = await userRepo.createUser({
-    name,
-    email,
-    password_hash: passwordHash,
-    token_hash: tokenHash,
+  const hashCode = (email, code) => crypto.createHmac('sha256', verificationSecret)
+    .update(`${email}\0${code}`).digest('hex');
+  const newCode = () => String(crypto.randomInt(0, 1000000)).padStart(6, '0');
+  const send = async (message) => {
+    try {
+      await mailSender.send(message);
+      logger.info?.('AUTH_MAIL_ACCEPTED: SMTP accepted a message; inbox delivery is not guaranteed.');
+    }
+    catch (error) {
+      // Never log the provider error, recipient, password or code. Pending users can retry via resend.
+      const safeCode = ['EAUTH', 'ECONNECTION', 'ETIMEDOUT', 'ESOCKET', 'EENVELOPE', 'EMESSAGE'].includes(error.code) ? error.code : 'UNKNOWN';
+      logger.warn(`AUTH_MAIL_FAILED (${safeCode}): check SMTP settings; pending users can request another code.`);
+    }
+  };
+  const sendCode = (email, code) => send({
+    to: email,
+    subject: 'Your CivicConnect verification code',
+    text: `Your CivicConnect verification code is: ${code}\n\nEnter this code on the Confirm your email screen. It expires in ${TTL_MINUTES} minutes and works once. A new code replaces the previous code.\n\nIf you did not register, ignore this email.`,
   });
 
-  // Return the created user and the plain token (which the controller will eventually email)
   return {
-    user: newUser,
-    verification_token: plainToken,
-  };
-};
+    async registerUser({ name, email, password }) {
+      email = normaliseEmail(email);
+      if (typeof name !== 'string' || !name.trim() || name.trim().length > 100 ||
+          typeof password !== 'string' || password.length < 8 || password.length > 64 ||
+          Buffer.byteLength(password, 'utf8') > 72) {
+        throw fault(400, 'BAD_REQUEST', 'Enter a name (1–100 characters) and a password of 8–64 characters (maximum 72 UTF-8 bytes).');
+      }
+      const passwordHash = await bcrypt.hash(password, 10);
+      const code = newCode();
+      // Unique email constraint handles simultaneous registrations without overwriting any account.
+      const user = await repo.createUser({ name: name.trim(), email, password_hash: passwordHash,
+        token_hash: hashCode(email, code), ttlMinutes: TTL_MINUTES });
+      if (!user) {
+        throw fault(
+          409,
+          'ACCOUNT_EXISTS',
+          'An account with this email already exists. Please sign in. If you have not verified it yet, request a new verification code.'
+        );
+      }
 
-const loginUser = async (email, password) => {
-  // 1. Find the user by email
-  const user = await userRepo.findUserByEmail(email);
-  if (!user) {
-    throw new Error("Invalid email or password.");
-  }
-
-  // 2. Compare the provided password with the stored hash
-  const isMatch = await bcrypt.compare(password, user.password_hash);
-  if (!isMatch) {
-    throw new Error("Invalid email or password.");
-  }
-
-  // 3. Generate the JWT (expires in 24 hours)
-  const token = jwt.sign(
-    {
-      user_id: user.user_id,
-      name: user.name,
-      email: user.email,
-      user_type: user.user_type, // Exposes role to API middleware
-      category: user.category, // Exposes department string to API middleware
+await sendCode(email, code);
+      // Never expose the code, hash, user ID, or whether the address exists.
+      return { ...GENERIC };
     },
-    process.env.JWT_SECRET,
-    { expiresIn: "24h" },
-  );
-
-  return {
-    user: {
-      user_id: user.user_id,
-      name: user.name,
-      email: user.email,
-      user_type: user.user_type, // Exposes role to React router
-      category: user.category, // Exposes department string to React UI
+    async resendVerification(email) {
+      email = normaliseEmail(email);
+      const code = newCode();
+      const issued = await repo.replaceVerificationCode(email, hashCode(email, code), TTL_MINUTES);
+      if (issued) await sendCode(email, code);
+      return { ...GENERIC };
     },
-    token,
+    async verifyEmail({ email, code }) {
+      email = normaliseEmail(email);
+      if (typeof code !== 'string' || !/^\d{6}$/.test(code)) {
+        throw fault(400, 'BAD_REQUEST', 'Enter the six-digit code as shown in your email.');
+      }
+      if (!await repo.consumeVerificationCode(email, hashCode(email, code))) {
+        throw fault(400, 'TOKEN_INVALID', 'The code is incorrect, expired, already used, or has reached its attempt limit. Request a new code.');
+      }
+      return { message: 'Email confirmed. You can now sign in.' };
+    },
+    async loginUser(email, password) {
+      email = normaliseEmail(email);
+      if (typeof password !== 'string' || !password) throw fault(400, 'BAD_REQUEST', 'Password is required.');
+      const user = await repo.findUserByEmail(email);
+      if (!user || !await bcrypt.compare(password, user.password_hash)) {
+        throw fault(401, 'INVALID_CREDENTIALS', 'Invalid email or password.');
+      }
+      if (!user.email_verified) throw fault(403, 'EMAIL_NOT_VERIFIED', 'Confirm your email before signing in.');
+      const claims = { user_id: user.user_id, name: user.name, email: user.email,
+        user_type: user.user_type, category: user.category };
+      return { user: claims, token: jwt.sign(claims, jwtSecret, { expiresIn: '24h' }) };
+    },
   };
-};
+}
+module.exports = { createUserService };
 
-const verifyEmail = async (plainToken) => {
-  // 1. Hash the incoming plain token to match what is in the database
-  const tokenHash = crypto
-    .createHash("sha256")
-    .update(plainToken)
-    .digest("hex");
-
-  // 2. Find the token record
-  const tokenRecord = await userRepo.findTokenByHash(tokenHash);
-
-  if (!tokenRecord) {
-    throw new Error("Invalid verification token.");
-  }
-
-  if (tokenRecord.used_at) {
-    throw new Error("This token has already been used.");
-  }
-
-  if (new Date(tokenRecord.expires_at) < new Date()) {
-    throw new Error("This verification token has expired.");
-  }
-
-  // 3. Mark the user as verified
-  await userRepo.markUserVerified(tokenRecord.user_id, tokenRecord.token_id);
-
-  return { success: true, message: "Email successfully verified." };
-};
-
-module.exports = { registerUser, loginUser, verifyEmail };

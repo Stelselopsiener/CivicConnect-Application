@@ -95,7 +95,7 @@ export const requestSchema = {
 
 /** REQ-023, REQ-030: name, email and password only. */
 export const registerSchema = {
-  name: [rules.required("Enter your full name.")],
+  name: [rules.required("Enter your full name."), rules.maxLength(100, "Use at most 100 characters.")],
   email: [
     rules.required("Enter your email address."),
     rules.email("Enter an email address like name@example.org."),
@@ -103,6 +103,8 @@ export const registerSchema = {
   password: [
     rules.required("Choose a password."),
     rules.minLength(PASSWORD_MIN, `Use at least ${PASSWORD_MIN} characters.`),
+    rules.maxLength(64, "Use at most 64 characters."),
+    (value) => new TextEncoder().encode(value ?? "").length <= 72 ? null : "Use a password of at most 72 UTF-8 bytes.",
   ],
   confirmPassword: [
     rules.sameAs(

@@ -16,6 +16,7 @@ import { eventBus } from './events/eventBus'
 import { withRequestEvents } from './events/withRequestEvents'
 import { httpTransport } from './http/httpTransport'
 import { mockTransport } from './mock/mockTransport'
+import { getToken, clearToken } from './session'
 
 export function createServices({ transport, bus }) {
   return {
@@ -26,5 +27,9 @@ export function createServices({ transport, bus }) {
 
 const transport = env.useMockApi ? mockTransport : httpTransport
 
-export const { auth: authGateway, requests: requestGateway } = createServices({ transport, bus: eventBus })
+// Keep the request-module transport selection intact for teammates' development work.
+// Discard only the old unsigned demo session, never genuine backend tokens.
+if (getToken()?.endsWith('.demo')) clearToken()
+export const authGateway = createAuthGateway(httpTransport)
+export const requestGateway = withRequestEvents(createRequestGateway(transport), eventBus)
 export const isDemoMode = env.useMockApi
