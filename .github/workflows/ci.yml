@@ -70,7 +70,6 @@ jobs:
           node-version: 24
 
       - name: Run Test Suite
-        # 3. Added environment variables to pass your secure passwords to the tests
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DB_HOST: localhost
@@ -85,11 +84,8 @@ jobs:
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           SMTP_FROM: ${{ secrets.SMTP_FROM }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          VERIFICATION_SECRET: $${{ secrets.VERIFICATION_SECRET }}
+          VERIFICATION_SECRET: ${{ secrets.VERIFICATION_SECRET }}
         run: |
-          # 4. Added 'cd src/backend' so the runner actually navigates to your backend folder
           cd src/backend
-          # 5. Changed to 'npm install' here as well
           npm install
-          npm run migrate
           npm test
