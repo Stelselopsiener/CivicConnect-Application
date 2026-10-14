@@ -64,6 +64,8 @@ jobs:
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           SMTP_FROM: ${{ secrets.SMTP_FROM }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          VERIFICATION_SECRET: $${{ secrets.VERIFICATION_SECRET }}
         run: |
           # 4. Added 'cd src/backend' so the runner actually navigates to your backend folder
           cd src/backend
