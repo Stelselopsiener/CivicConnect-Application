@@ -69,6 +69,17 @@ jobs:
         with:
           node-version: 24
 
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      # Creates user, service_request, action, category, seeds, etc.
+      - name: Apply database schema
+        env:
+          PGPASSWORD: password
+        run: |
+          psql -h localhost -U postgres -d test_db \
+            -f src/backend/migrations/000_schema.sql
+
       - name: Run Test Suite
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
