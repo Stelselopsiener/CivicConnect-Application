@@ -91,4 +91,5 @@ jobs:
           cd src/backend
           # 5. Changed to 'npm install' here as well
           npm install
+          npm run migrate
           npm test
