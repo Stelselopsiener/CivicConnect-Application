@@ -73,6 +73,12 @@ jobs:
         # 3. Added environment variables to pass your secure passwords to the tests
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USER: postgres
+          DB_PASSWORD: password
+          DB_NAME: test_db
+          
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
           SMTP_USER: ${{ secrets.SMTP_USER }}
