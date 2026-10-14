@@ -68,29 +68,24 @@ const updateRequestStatus = async (requestId, userId, updateData) => {
     new_status = currentStatus;
   }
 
-  // ULTRA-STRICT STATE MACHINE LOCK
-  // We removed the identical-state bypass. Every single update is evaluated.
-  const cKey = currentStatus.toLowerCase().trim();
-  const nKey = new_status.toLowerCase().trim();
+const ALLOWED = {
+  pending: ["accepted", "cancelled", "rejected"],
+  accepted: ["in_progress", "cancelled"],
+  in_progress: ["completed", "accepted"],
+  completed: ["in_progress"],
+  rejected: [],
+  cancelled: [],
+};
 
-  const validTransitions = {
-    pending: ["in progress", "cancelled"],
-    "in progress": ["completed", "pending", "cancelled"],
-    // Once completed or cancelled, absolutely NO further transitions are allowed.
-    completed: [],
-    cancelled: [],
-  };
+// currentStatus / newStatus as lowercase, e.g. "pending", "completed"
+const from = String(currentStatus).toLowerCase().replace(/\s+/g, "_");
+const to = String(newStatus).toLowerCase().replace(/\s+/g, "_");
 
-  const allowed = validTransitions[cKey] || [];
-
-  // If the transition isn't explicitly mapped, throw the 409 Conflict error.
-  if (!allowed.includes(nKey)) {
-    const error = new Error(
-      `Invalid transition from ${currentStatus} to ${new_status}`,
-    );
-    error.status = 409;
-    throw error;
-  }
+if (!(ALLOWED[from] || []).includes(to)) {
+  const err = new Error(`Invalid transition from ${from} to ${to}`);
+  err.status = 409;
+  throw err;
+}
 
   await requestRepo.addTimelineAction({
     requestId,
