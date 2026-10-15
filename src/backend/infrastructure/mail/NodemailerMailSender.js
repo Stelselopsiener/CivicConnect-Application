@@ -13,7 +13,7 @@ class NodemailerMailSender {
       if (!env[key]) throw new Error(`${key} is required.`);
     }
     const port = Number(env.SMTP_PORT);
-    if (![465, 587].includes(port))
+    if (![465, 587, 2525].includes(port))
       throw new Error("Use SMTP port 465 (TLS) or 587 (STARTTLS).");
 
     // ALLOW JEST: Added `&& env.NODE_ENV !== 'test'` so tests can run with real credentials
