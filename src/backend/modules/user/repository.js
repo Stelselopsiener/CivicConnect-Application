@@ -19,14 +19,38 @@ async function insertCode(client, userId, hash, ttlMinutes) {
     VALUES ($1, $2, NOW() + ($3 * INTERVAL '1 minute'), NOW(), 0)`, [userId, hash, ttlMinutes]);
 }
 
+// const createUser = (data) => transaction(async (client) => { PREV CODE
+//   const { rows } = await client.query(`INSERT INTO "user" (name, email, password_hash, user_type, email_verified)
+//     VALUES ($1, $2, $3, 'requester', false)
+//     ON CONFLICT ((LOWER(email))) DO NOTHING RETURNING user_id`, [data.name, data.email, data.password_hash]);
+//   if (!rows.length) return null; // Only an email conflict is ignored.
+//   await insertCode(client, rows[0].user_id, data.token_hash, data.ttlMinutes);
+//   return rows[0];
+// });
+
+
 const createUser = (data) => transaction(async (client) => {
-  const { rows } = await client.query(`INSERT INTO "user" (name, email, password_hash, user_type, email_verified)
-    VALUES ($1, $2, $3, 'requester', false)
-    ON CONFLICT ((LOWER(email))) DO NOTHING RETURNING user_id`, [data.name, data.email, data.password_hash]);
-  if (!rows.length) return null; // Only an email conflict is ignored.
-  await insertCode(client, rows[0].user_id, data.token_hash, data.ttlMinutes);
+  const { rows } = await client.query(`
+    INSERT INTO "user" (name, email, password_hash, user_type, email_verified)
+    VALUES ($1, $2, $3, 'requester', true)
+    ON CONFLICT ((LOWER(email))) DO NOTHING
+    RETURNING user_id
+  `, [data.name, data.email, data.password_hash]);
+
+  if (!rows.length) return null;
+
+  // Email verification deferred to next milestone.
+  // await insertCode(
+  //   client,
+  //   rows[0].user_id,
+  //   data.token_hash,
+  //   data.ttlMinutes
+  // );
+
   return rows[0];
 });
+
+
 
 const findUserByEmail = async (email) => {
   const { rows } = await pool.query(`SELECT u.*, c.name AS category FROM "user" u
