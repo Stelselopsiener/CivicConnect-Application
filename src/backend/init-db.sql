@@ -1,4 +1,4 @@
--- 1. Clean up existing tables (idempotent setup for CI)
+-- 1. Clean up existing tables
 DROP TABLE IF EXISTS "log" CASCADE;
 DROP TABLE IF EXISTS action CASCADE;
 DROP TABLE IF EXISTS service_request CASCADE;
@@ -87,10 +87,12 @@ CREATE TABLE "log" (
 );
 
 -- 7. Insert Seed Data required for Jest Tests
+-- Added "IT support" as ID 4 to satisfy TC-007
 INSERT INTO category (name, description) VALUES
 ('Roads & Transport', 'Potholes, traffic lights, road markings'),
 ('Water & Sanitation', 'Burst pipes, sewage leaks, water supply'),
-('Electricity', 'Power outages, streetlights, cable theft');
+('Electricity', 'Power outages, streetlights, cable theft'),
+('IT support', 'System issues, network outages');
 
 INSERT INTO action_status (name) VALUES
 ('Pending'),
@@ -104,10 +106,14 @@ INSERT INTO action_type (name) VALUES
 ('Comment'),
 ('Internal Note');
 
--- Insert dummy test users
+-- Insert dummy test users (Added user 3 to satisfy TC-007)
 INSERT INTO "user" (email, password_hash, role, is_verified) VALUES
-('admin@civicconnect.test', 'dummy_hash_for_testing', 'admin', true),
-('staff@civicconnect.test', 'dummy_hash_for_testing', 'staff', true);
+('admin@civicconnect.test', 'dummy_hash', 'admin', true),
+('staff@civicconnect.test', 'dummy_hash', 'staff', true),
+('it_staff@civicconnect.test', 'dummy_hash', 'staff', true);
 
--- Assign staff user to the 'Roads & Transport' category
-INSERT INTO staff_category (user_id, category_id) VALUES (2, 1);
+-- Assign staff user 2 to 'Roads & Transport' (Category 1)
+-- Assign staff user 3 to 'IT support' (Category 4)
+INSERT INTO staff_category (user_id, category_id) VALUES 
+(2, 1),
+(3, 4);
