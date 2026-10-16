@@ -4,18 +4,27 @@ const cors = require("cors");
 const requestRoutes = require("./api/requestRoutes");
 const { createUserRoutes } = require("./api/userRoutes");
 const { createUserService } = require("./modules/user/service");
-const { NodemailerMailSender } = require("./infrastructure/mail/NodemailerMailSender");
-const userRoutes = createUserRoutes(createUserService({
-  repo: require("./modules/user/repository"),
-  mailSender: new NodemailerMailSender(),
-  bcrypt: require("bcrypt"), jwt: require("jsonwebtoken"),
-  jwtSecret: process.env.JWT_SECRET,
-  verificationSecret: process.env.VERIFICATION_SECRET,
-}));
+const {
+  NodemailerMailSender,
+} = require("./infrastructure/mail/NodemailerMailSender");
+const userRoutes = createUserRoutes(
+  createUserService({
+    repo: require("./modules/user/repository"),
+    mailSender: new NodemailerMailSender(),
+    bcrypt: require("bcrypt"),
+    jwt: require("jsonwebtoken"),
+    jwtSecret: process.env.JWT_SECRET,
+    verificationSecret: process.env.VERIFICATION_SECRET,
+  }),
+);
 const staffRoutes = require("./api/staffRoutes");
 const adminRoutes = require("./api/adminRoutes"); // or wherever your admin routes are
 
 const app = express();
+
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok", timestamp: new Date() });
+});
 
 app.use(cors());
 app.use(express.json());

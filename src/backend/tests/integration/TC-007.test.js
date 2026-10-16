@@ -20,7 +20,7 @@ describe("TC-007: Staff Jurisdiction Filtering", () => {
     const response = await request(app)
       .get("/api/v1/staff/requests")
       .set("Authorization", `Bearer ${staffToken}`);
-
+    console.log("TC-007 Crash Details:", response.body);
     expect(response.status).toBe(200);
 
     const requests = response.body.data;

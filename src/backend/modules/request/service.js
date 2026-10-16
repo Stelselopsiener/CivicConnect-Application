@@ -74,10 +74,12 @@ const updateRequestStatus = async (requestId, userId, updateData) => {
   const nKey = new_status.toLowerCase().trim();
 
   const validTransitions = {
-    pending: ["in progress", "cancelled"],
-    "in progress": ["completed", "pending", "cancelled"],
-    // Once completed or cancelled, absolutely NO further transitions are allowed.
-    completed: [],
+    pending: ["accepted", "rejected", "cancelled"],
+    accepted: ["in progress"],
+    "in progress": ["completed", "pending"],
+    completed: ["closed", "in progress"], // "in progress" allows reopening
+    closed: [],
+    rejected: [],
     cancelled: [],
   };
 
