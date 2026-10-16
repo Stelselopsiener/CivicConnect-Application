@@ -45,6 +45,23 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+
+    # Spin up ephemeral PostgreSQL database for integration tests
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: dummy_user
+          POSTGRES_PASSWORD: dummy_password
+          POSTGRES_DB: dummy_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -56,8 +73,14 @@ jobs:
 
       - name: Run Test Suite
         env:
-          # Dummy data to satisfy application startup validation
+          # Database connection variables matching the ephemeral container
           DATABASE_URL: "postgres://dummy_user:dummy_password@localhost:5432/dummy_db"
+          PGUSER: "dummy_user"
+          PGPASSWORD: "dummy_password"
+          PGHOST: "localhost"
+          PGDATABASE: "dummy_db"
+          PGPORT: "5432"
+          # Dummy SMTP data
           SMTP_HOST: "smtp.dummy.com"
           SMTP_PORT: "587"
           SMTP_USER: "dummy@dummy.com"
@@ -70,5 +93,28 @@ jobs:
         run: |
           cd src/backend
           npm install
-          # Isolate the CI run to the successfully mocked test to bypass DB connection errors
-          npx jest tests/unit/TC-003.test.js
+
+          # Inject the schema and seed data into the ephemeral database
+          psql -h localhost -U dummy_user -d dummy_db -f init-db.sql
+
+          # Run the full test suite EXCEPT TC-006
+          npx jest --testPathIgnorePatterns="TC-006.test.js"
+
+      - name: Run Artillery Load Test
+        env:
+          # Keep the DB variables so the server can connect when it starts up
+          DATABASE_URL: "postgres://dummy_user:dummy_password@localhost:5432/dummy_db"
+          NODE_ENV: "test"
+          JWT_SECRET: "dummy_jwt_secret_for_ci_testing"
+          VERIFICATION_SECRET: "this_is_a_dummy_verification_secret_that_is_at_least_32_characters"
+        run: |
+          cd src/backend
+
+          # Start the backend server in the background
+          npm start &
+
+          # Give the Node.js process and DB connection 5 seconds to initialize
+          sleep 5
+
+          # Execute the complex user scenarios against the running server
+          npx artillery run load-test.yml

@@ -1,0 +1,33 @@
+config:
+  target: "http://localhost:3000"
+  phases:
+    # Warm-up phase: 5 users per second for 5 seconds
+    - duration: 5
+      arrivalRate: 5
+      name: "Warm up"
+    # Load phase: 20 users per second for 10 seconds
+    - duration: 10
+      arrivalRate: 20
+      name: "Sustained load"
+  defaults:
+    headers:
+      Content-Type: "application/json"
+      Accept: "application/json"
+
+scenarios:
+  - name: "Scenario 1: Health & Readiness Check"
+    weight: 3 # Runs 3 times as often as Scenario 2
+    flow:
+      - get:
+          url: "/health"
+
+  - name: "Scenario 2: API Route Parsing & Middleware Validation"
+    weight: 1
+    flow:
+      # Tests the Express JSON parsing, CORS, and auth middleware
+      - get:
+          url: "/api/v1/requests"
+      - think: 1
+      # Tests an invalid route to ensure the server handles 404s gracefully under load
+      - get:
+          url: "/api/v1/invalid-route"
