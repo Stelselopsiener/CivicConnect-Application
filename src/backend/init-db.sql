@@ -57,7 +57,7 @@ CREATE TABLE staff_category (
 -- 5. Create Core Business Tables
 CREATE TABLE service_request (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+    requester_id INTEGER NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
     category_id INTEGER NOT NULL REFERENCES category(id),
     status_id INTEGER NOT NULL REFERENCES action_status(id),
     title VARCHAR(255) NOT NULL,
@@ -87,7 +87,6 @@ CREATE TABLE "log" (
 );
 
 -- 7. Insert Seed Data required for Jest Tests
--- Added "IT support" as ID 4 to satisfy TC-007
 INSERT INTO category (name, description) VALUES
 ('Roads & Transport', 'Potholes, traffic lights, road markings'),
 ('Water & Sanitation', 'Burst pipes, sewage leaks, water supply'),
@@ -106,7 +105,7 @@ INSERT INTO action_type (name) VALUES
 ('Comment'),
 ('Internal Note');
 
--- Insert dummy test users (Added user 3 to satisfy TC-007)
+-- Insert dummy test users
 INSERT INTO "user" (email, password_hash, role, is_verified) VALUES
 ('admin@civicconnect.test', 'dummy_hash', 'admin', true),
 ('staff@civicconnect.test', 'dummy_hash', 'staff', true),
