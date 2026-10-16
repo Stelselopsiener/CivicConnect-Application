@@ -28,7 +28,7 @@ CREATE TABLE action_type (
 
 -- 3. Create User & Authentication Tables
 CREATE TABLE "user" (
-    id SERIAL PRIMARY KEY,
+    user_id SERIAL PRIMARY KEY, 
     email VARCHAR(255) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     role VARCHAR(50) DEFAULT 'citizen',
@@ -41,7 +41,7 @@ CREATE UNIQUE INDEX user_lower_email_idx ON "user" (LOWER(email));
 
 CREATE TABLE verification_token (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES "user"(user_id) ON DELETE CASCADE,
     token VARCHAR(255) NOT NULL,
     expires_at TIMESTAMP NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -49,7 +49,7 @@ CREATE TABLE verification_token (
 
 -- 4. Create Staff Mapping Table
 CREATE TABLE staff_category (
-    user_id INTEGER NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES "user"(user_id) ON DELETE CASCADE,
     category_id INTEGER NOT NULL REFERENCES category(id) ON DELETE CASCADE,
     PRIMARY KEY (user_id, category_id)
 );
@@ -57,7 +57,7 @@ CREATE TABLE staff_category (
 -- 5. Create Core Business Tables
 CREATE TABLE service_request (
     id SERIAL PRIMARY KEY,
-    requester_id INTEGER NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+    requester_id INTEGER NOT NULL REFERENCES "user"(user_id) ON DELETE CASCADE,
     category_id INTEGER NOT NULL REFERENCES category(id),
     status_id INTEGER NOT NULL REFERENCES action_status(id),
     title VARCHAR(255) NOT NULL,
@@ -70,7 +70,7 @@ CREATE TABLE service_request (
 CREATE TABLE action (
     id SERIAL PRIMARY KEY,
     request_id INTEGER NOT NULL REFERENCES service_request(id) ON DELETE CASCADE,
-    staff_id INTEGER NOT NULL REFERENCES "user"(id),
+    staff_id INTEGER NOT NULL REFERENCES "user"(user_id),
     action_type_id INTEGER NOT NULL REFERENCES action_type(id),
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -82,7 +82,7 @@ CREATE TABLE "log" (
     entity_name VARCHAR(100) NOT NULL,
     entity_id INTEGER NOT NULL,
     action VARCHAR(255) NOT NULL,
-    performed_by INTEGER REFERENCES "user"(id),
+    performed_by INTEGER REFERENCES "user"(user_id),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
