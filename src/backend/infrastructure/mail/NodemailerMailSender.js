@@ -43,12 +43,13 @@ class NodemailerMailSender {
       disableUrlAccess: true,
     });
   }
-  async send({ to, subject, text }) {
+  async send({ to, subject, text, html }) {
     const info = await this.transport.sendMail({
       from: this.from,
       to: { address: to },
       subject,
       text,
+      ...(html ? { html } : {}),
     });
     if (!info.accepted?.length)
       throw new Error("SMTP did not accept the recipient.");
