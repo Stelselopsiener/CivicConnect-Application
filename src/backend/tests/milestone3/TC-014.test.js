@@ -35,3 +35,5 @@
 //   expect(requestRepo.addTimelineAction).not.toHaveBeenCalled();
 // });
 // test.todo('TC-014 real database: staff worklist and direct request access exclude other categories (see practical guide)');
+
+test.todo('TC-014 disabled: known defect, re-enable after fix');

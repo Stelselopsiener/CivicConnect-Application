@@ -62,3 +62,5 @@
 //     expect(pool.committed.service_request).toHaveLength(0);
 //   });
 // });
+
+test.todo('TC-009 disabled: known defect, re-enable after fix');

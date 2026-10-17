@@ -12,3 +12,5 @@
 //   await service.submitRequest(data('IT support'));
 //   expect(repo.createRequest).toHaveBeenCalledWith(expect.objectContaining({category_id: 4}));
 // });
+
+test.todo('TC-012 disabled: known defect, re-enable after fix');

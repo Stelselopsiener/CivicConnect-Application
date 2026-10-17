@@ -13,3 +13,5 @@
 //   await expect(service.updateRequestStatus(1,101,{new_status:to})).rejects.toMatchObject({status:409});
 //   expect(repo.addTimelineAction).not.toHaveBeenCalled();
 // });
+
+test.todo('TC-013 disabled: known defect, re-enable after fix');

@@ -30,3 +30,5 @@
 //     expect(pool.query).not.toHaveBeenCalled();
 //   });
 // });
+
+test.todo('TC-008 disabled: known defect, re-enable after fix');
