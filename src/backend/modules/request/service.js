@@ -5,9 +5,9 @@ const CATEGORY_MAP = {
   "Equipment damage": 2,
   "Security concern": 3,
   "IT support": 4,
-  "Maintenance": 5,
+  Maintenance: 5,
   "Lost property": 6,
-  "Other": 7,
+  Other: 7,
 };
 
 const REVERSE_CATEGORY_MAP = {
@@ -44,8 +44,7 @@ const submitRequest = async (requestData) => {
   }
 
   requestData.category_id = CATEGORY_MAP[requestData.category] || 1;
-  const result = await requestRepo.createRequest(requestData);
-  return result;
+  return await requestRepo.createRequest(requestData);
 };
 
 const getRequestById = async (requestId) => {
@@ -56,18 +55,43 @@ const getRequestById = async (requestId) => {
 const updateRequestStatus = async (requestId, userId, updateData) => {
   let new_status =
     updateData.new_status || updateData.status || updateData.newStatus;
-  let action_type = updateData.action_type || updateData.actionType;
+  let action_type =
+    updateData.action_type || updateData.actionType || "Status change";
   const comment = updateData.comment || updateData.message || null;
 
-  // BULLETPROOFING: If the frontend didn't pass a status, fetch the current one so we never throw a 400!
+  const currentReq = await requestRepo.findRequestById(requestId);
+  if (!currentReq) throw new Error("Request not found");
+
+  const currentStatus = currentReq.status || "Pending";
+
   if (!new_status) {
-    const currentReq = await requestRepo.findRequestById(requestId);
-    if (!currentReq) throw new Error("Request not found");
-    new_status = currentReq.status || "Pending";
+    new_status = currentStatus;
   }
 
-  if (!action_type) {
-    action_type = "Status change";
+  // ULTRA-STRICT STATE MACHINE LOCK
+  // We removed the identical-state bypass. Every single update is evaluated.
+  const cKey = currentStatus.toLowerCase().trim();
+  const nKey = new_status.toLowerCase().trim();
+
+  const validTransitions = {
+    pending: ["accepted", "rejected", "cancelled"],
+    accepted: ["in progress"],
+    "in progress": ["completed", "pending"],
+    completed: ["closed", "in progress"], // "in progress" allows reopening
+    closed: [],
+    rejected: [],
+    cancelled: [],
+  };
+
+  const allowed = validTransitions[cKey] || [];
+
+  // If the transition isn't explicitly mapped, throw the 409 Conflict error.
+  if (!allowed.includes(nKey)) {
+    const error = new Error(
+      `Invalid transition from ${currentStatus} to ${new_status}`,
+    );
+    error.status = 409;
+    throw error;
   }
 
   await requestRepo.addTimelineAction({

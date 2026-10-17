@@ -4,12 +4,13 @@ const cors = require("cors");
 const requestRoutes = require("./api/requestRoutes");
 const { createUserRoutes } = require("./api/userRoutes");
 const { createUserService } = require("./modules/user/service");
-// Brevo (HTTPS API) in production on Render; Nodemailer/Ethereal SMTP locally. See createMailSender.js.
-const { createMailSender } = require("./infrastructure/mail/createMailSender");
+const {
+  NodemailerMailSender,
+} = require("./infrastructure/mail/NodemailerMailSender");
 const userRoutes = createUserRoutes(
   createUserService({
     repo: require("./modules/user/repository"),
-    mailSender: createMailSender(),
+    mailSender: new NodemailerMailSender(),
     bcrypt: require("bcrypt"),
     jwt: require("jsonwebtoken"),
     jwtSecret: process.env.JWT_SECRET,
