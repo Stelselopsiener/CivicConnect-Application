@@ -135,23 +135,23 @@ function SignInForm() {
     }
   };
 
-  // const resend = async () => {
-  //   setResending(true);
-  //   try {
-  //     await authGateway.resendVerification(form.email);
-  //     navigate("/check-email", {
-  //       state: {
-  //         email: form.email,
-  //         resent: true,
-  //       },
-  //     });
-  //   } catch (error) {
-  //     setFailure(error);
-  //     setResending(false);
-  //   }
-  // };
+  const resend = async () => {
+    setResending(true);
+    try {
+      await authGateway.resendVerification(form.email);
+      navigate("/check-email", {
+        state: {
+          email: form.email.trim().toLowerCase(),
+          resent: true,
+        },
+      });
+    } catch (error) {
+      setFailure(error);
+      setResending(false);
+    }
+  };
 
-  //const unverified = failure?.code === ERROR_CODE.EMAIL_NOT_VERIFIED;
+  const unverified = failure?.code === ERROR_CODE.EMAIL_NOT_VERIFIED;
 
   return (
     <form onSubmit={submit} noValidate className="flex flex-col gap-5">
@@ -166,21 +166,21 @@ function SignInForm() {
           Sign in with your email and password.
         </Banner>
       )}
-      {/* {unverified && (
+      {unverified && (
         <Banner tone="error" title="Please confirm your email first">
           Check your inbox for your verification code.{" "}
-          <Link to="/verify-email" state={{ email: form.email }} className="link">Enter your code</Link>{" or "}
+          <Link to="/verify-email" state={{ email: form.email.trim().toLowerCase() }} className="link">Enter your code</Link>{" or "}
           <button
             type="button"
             onClick={resend}
             disabled={resending}
             className="link cursor-pointer"
           >
-            {resending ? "Sending…" : "Send a new confirmation email"}
+            {resending ? "Sending…" : "send a new code"}
           </button>
         </Banner>
-      )} */}
-      {failure &&  ( //  {failure && !unverified && (
+      )}
+      {failure && !unverified && (
         <Banner tone="error" title={failure.message} />
       )}
 
@@ -254,14 +254,9 @@ function RegisterForm() {
     setBusy(true);
     try {
       await authGateway.register(form);
-      // navigate("/check-email", {
-      //   state: {
-      //     email: form.email.trim().toLowerCase(),
-      //   },
-      navigate("/sign-in", {
+      navigate("/check-email", {
         state: {
           email: form.email.trim().toLowerCase(),
-          registered: true,
         },
       });
     } catch (error) {
@@ -291,8 +286,7 @@ function RegisterForm() {
         label="Email address"
         required
         error={errors.email}
-       // hint="We will send a six-digit verification code to this address."
-        hint="This email address will be used to sign in to your account."
+        hint="We will send a six-digit verification code to this address."
       >
         {(a11y) => (
           <input
