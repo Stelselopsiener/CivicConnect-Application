@@ -65,11 +65,12 @@ const handleUpdateStatus = async (req, res) => {
 
     res.status(200).json({ data: result });
   } catch (err) {
-    // I added this log so you can always see the exact error in your terminal!
     console.error(`[Status Update Error - Request ${req.params.id}]:`, err);
-    res
-      .status(400)
-      .json({ error: { code: "BAD_REQUEST", message: err.message } });
+    // Allow the service to dictate a 409 status code for state machine locks
+    const statusCode = err.status || 400;
+    const code = statusCode === 409 ? "CONFLICT" : "BAD_REQUEST";
+
+    res.status(statusCode).json({ error: { code, message: err.message } });
   }
 };
 

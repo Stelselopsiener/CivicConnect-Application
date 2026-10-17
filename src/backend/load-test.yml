@@ -1,0 +1,18 @@
+config:
+  target: "http://localhost:3000"
+  phases:
+    - duration: 10
+      arrivalCount: 210 # Exactly 210 users spread across 10 seconds
+      name: "210 Users Burst"
+  defaults:
+    headers:
+      Content-Type: "application/json"
+      Accept: "application/json"
+
+scenarios:
+  - name: "210 Users making 10 requests each"
+    flow:
+      - loop:
+          - get:
+              url: "/health"
+        count: 10 # 210 users * 10 requests = 2,100 total requests
