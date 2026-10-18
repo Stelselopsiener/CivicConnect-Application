@@ -97,8 +97,8 @@ jobs:
           # Inject the schema and seed data into the ephemeral database
           psql -h localhost -U dummy_user -d dummy_db -f init-db.sql
 
-          # Run the full test suite EXCEPT TC-006 and TC-007
-          npx jest --testPathIgnorePatterns="TC-006.test.js|TC-007.test.js"
+          # Run the test suite (Bypassing only TC-006 for the dummy DB constraint issue)
+          npx jest --testPathIgnorePatterns="TC-006.test.js"
 
       - name: Run Artillery Load Test
         env:

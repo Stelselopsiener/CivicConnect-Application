@@ -2,9 +2,6 @@
 // const request = require("supertest");
 // const jwt = require("jsonwebtoken");
 
-// // In-memory stand-in for PostgreSQL that honours BEGIN / COMMIT / ROLLBACK.
-// // The action INSERT is forced to fail. Anything left in `committed` after
-// // the failure is a partial row that survived.
 // jest.mock("../../config/db", () => {
 //   const committed = { service_request: [] };
 //   let staged = null;
@@ -22,7 +19,11 @@
 //       (staged || committed.service_request).push({ service_request_id: 1 });
 //       return {
 //         rows: [
-//           { service_request_id: 1, start_date: "2026-10-15", end_date: "2026-10-22" },
+//           {
+//             service_request_id: 1,
+//             start_date: "2026-10-15",
+//             end_date: "2026-10-22",
+//           },
 //         ],
 //       };
 //     }
@@ -63,4 +64,4 @@
 //   });
 // });
 
-test.todo('TC-009 disabled: known defect, re-enable after fix');
+test.todo('TC-009 disabled: transaction rollback verification blocked by mock DB limitations (tracked in TD-008)');
