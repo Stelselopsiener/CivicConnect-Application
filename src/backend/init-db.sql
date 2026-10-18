@@ -1,118 +1,121 @@
--- 1. Clean up existing tables
-DROP TABLE IF EXISTS "log" CASCADE;
-DROP TABLE IF EXISTS action CASCADE;
-DROP TABLE IF EXISTS service_request CASCADE;
-DROP TABLE IF EXISTS staff_category CASCADE;
-DROP TABLE IF EXISTS verification_token CASCADE;
-DROP TABLE IF EXISTS "user" CASCADE;
-DROP TABLE IF EXISTS action_type CASCADE;
-DROP TABLE IF EXISTS action_status CASCADE;
-DROP TABLE IF EXISTS category CASCADE;
+-- 1. DROP EXISTING TABLES (Reverse dependency order to avoid constraint errors)
+DROP TABLE IF EXISTS public.log CASCADE;
+DROP TABLE IF EXISTS public.action CASCADE;
+DROP TABLE IF EXISTS public.service_request CASCADE;
+DROP TABLE IF EXISTS public.staff_category CASCADE;
+DROP TABLE IF EXISTS public.verification_token CASCADE;
+DROP TABLE IF EXISTS public."user" CASCADE;
+DROP TABLE IF EXISTS public.action_type CASCADE;
+DROP TABLE IF EXISTS public.action_status CASCADE;
+DROP TABLE IF EXISTS public.category CASCADE;
 
--- 2. Create Core Lookup Tables
-CREATE TABLE category (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(255) UNIQUE NOT NULL,
-    description TEXT
+-- 2. CREATE LOOKUP TABLES (No foreign keys)
+CREATE TABLE public.category (
+  category_id integer GENERATED ALWAYS AS IDENTITY NOT NULL,
+  name text NOT NULL UNIQUE,
+  target_days integer NOT NULL DEFAULT 10,
+  CONSTRAINT category_pkey PRIMARY KEY (category_id)
 );
 
-CREATE TABLE action_status (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(50) UNIQUE NOT NULL
+CREATE TABLE public.action_status (
+  status_id integer GENERATED ALWAYS AS IDENTITY NOT NULL,
+  name text NOT NULL UNIQUE,
+  CONSTRAINT action_status_pkey PRIMARY KEY (status_id)
 );
 
-CREATE TABLE action_type (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(50) UNIQUE NOT NULL
+CREATE TABLE public.action_type (
+  action_type_id integer GENERATED ALWAYS AS IDENTITY NOT NULL,
+  name text NOT NULL UNIQUE,
+  CONSTRAINT action_type_pkey PRIMARY KEY (action_type_id)
 );
 
--- 3. Create User & Authentication Tables
-CREATE TABLE "user" (
-    user_id SERIAL PRIMARY KEY, 
-    email VARCHAR(255) NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
-    role VARCHAR(50) DEFAULT 'citizen',
-    is_verified BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+-- 3. CREATE BASE TABLES
+CREATE TABLE public."user" (
+  user_id integer GENERATED ALWAYS AS IDENTITY NOT NULL,
+  name text NOT NULL,
+  email text NOT NULL UNIQUE,
+  password_hash text NOT NULL,
+  user_type text NOT NULL DEFAULT 'requester'::text CHECK (user_type = ANY (ARRAY['requester'::text, 'staff'::text, 'management'::text])),
+  email_verified boolean NOT NULL DEFAULT false,
+  CONSTRAINT user_pkey PRIMARY KEY (user_id)
 );
 
--- DEF-006 / TD-006 Fix: Functional index for case-insensitive email uniqueness
-CREATE UNIQUE INDEX user_lower_email_idx ON "user" (LOWER(email));
-
-CREATE TABLE verification_token (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES "user"(user_id) ON DELETE CASCADE,
-    token VARCHAR(255) NOT NULL,
-    expires_at TIMESTAMP NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+-- 4. CREATE DEPENDENT TABLES (Contains foreign keys)
+CREATE TABLE public.verification_token (
+  token_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  user_id integer NOT NULL,
+  token_hash text NOT NULL,
+  expires_at timestamp with time zone NOT NULL,
+  used_at timestamp with time zone,
+  issued_at timestamp with time zone NOT NULL DEFAULT now(),
+  failed_attempts integer NOT NULL DEFAULT 0 CHECK (failed_attempts >= 0 AND failed_attempts <= 5),
+  CONSTRAINT verification_token_pkey PRIMARY KEY (token_id),
+  CONSTRAINT verification_token_user_id_fkey FOREIGN KEY (user_id) REFERENCES public."user"(user_id)
 );
 
--- 4. Create Staff Mapping Table
-CREATE TABLE staff_category (
-    user_id INTEGER NOT NULL REFERENCES "user"(user_id) ON DELETE CASCADE,
-    category_id INTEGER NOT NULL REFERENCES category(id) ON DELETE CASCADE,
-    PRIMARY KEY (user_id, category_id)
+CREATE TABLE public.staff_category (
+  user_id integer NOT NULL,
+  category_id integer NOT NULL,
+  CONSTRAINT staff_category_pkey PRIMARY KEY (user_id, category_id),
+  CONSTRAINT staff_category_user_id_fkey FOREIGN KEY (user_id) REFERENCES public."user"(user_id),
+  CONSTRAINT staff_category_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.category(category_id)
 );
 
--- 5. Create Core Business Tables
-CREATE TABLE service_request (
-    id SERIAL PRIMARY KEY,
-    requester_id INTEGER NOT NULL REFERENCES "user"(user_id) ON DELETE CASCADE,
-    category_id INTEGER NOT NULL REFERENCES category(id),
-    status_id INTEGER NOT NULL REFERENCES action_status(id),
-    title VARCHAR(255) NOT NULL,
-    description TEXT NOT NULL,
-    location VARCHAR(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE public.service_request (
+  service_request_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  requester_id integer NOT NULL,
+  category_id integer NOT NULL,
+  title text NOT NULL,
+  description text NOT NULL,
+  start_date timestamp with time zone NOT NULL DEFAULT now(),
+  end_date timestamp with time zone,
+  street_address text NOT NULL,
+  CONSTRAINT service_request_pkey PRIMARY KEY (service_request_id),
+  CONSTRAINT service_request_requester_id_fkey FOREIGN KEY (requester_id) REFERENCES public."user"(user_id),
+  CONSTRAINT service_request_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.category(category_id)
 );
 
-CREATE TABLE action (
-    id SERIAL PRIMARY KEY,
-    request_id INTEGER NOT NULL REFERENCES service_request(id) ON DELETE CASCADE,
-    staff_id INTEGER NOT NULL REFERENCES "user"(user_id),
-    action_type_id INTEGER NOT NULL REFERENCES action_type(id),
-    notes TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE public.action (
+  action_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  service_request_id bigint NOT NULL,
+  staff_id integer,
+  performed_by integer NOT NULL,
+  status_id integer NOT NULL,
+  action_type_id integer NOT NULL,
+  date timestamp with time zone NOT NULL DEFAULT now(),
+  comment text,
+  CONSTRAINT action_pkey PRIMARY KEY (action_id),
+  CONSTRAINT action_action_type_id_fkey FOREIGN KEY (action_type_id) REFERENCES public.action_type(action_type_id),
+  CONSTRAINT action_service_request_id_fkey FOREIGN KEY (service_request_id) REFERENCES public.service_request(service_request_id),
+  CONSTRAINT action_staff_id_fkey FOREIGN KEY (staff_id) REFERENCES public."user"(user_id),
+  CONSTRAINT action_performed_by_fkey FOREIGN KEY (performed_by) REFERENCES public."user"(user_id),
+  CONSTRAINT action_status_id_fkey FOREIGN KEY (status_id) REFERENCES public.action_status(status_id)
 );
 
--- 6. Create Audit Log Table
-CREATE TABLE "log" (
-    id SERIAL PRIMARY KEY,
-    entity_name VARCHAR(100) NOT NULL,
-    entity_id INTEGER NOT NULL,
-    action VARCHAR(255) NOT NULL,
-    performed_by INTEGER REFERENCES "user"(user_id),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE public.log (
+  log_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  table_name text,
+  record_id bigint,
+  operation text,
+  changed_details text,
+  changed_by integer,
+  changed_at timestamp with time zone NOT NULL DEFAULT now(),
+  error_message text,
+  CONSTRAINT log_pkey PRIMARY KEY (log_id)
 );
 
--- 7. Insert Seed Data required for Jest Tests
-INSERT INTO category (name, description) VALUES
-('Roads & Transport', 'Potholes, traffic lights, road markings'),
-('Water & Sanitation', 'Burst pipes, sewage leaks, water supply'),
-('Electricity', 'Power outages, streetlights, cable theft'),
-('IT support', 'System issues, network outages');
+-- 5. SEED REQUIRED LOOKUP DATA FOR TESTS
+INSERT INTO public.action_status (name) VALUES 
+  ('Pending'), ('Accepted'), ('In Progress'), ('Completed'), ('Closed'), ('Rejected'), ('Cancelled');
 
-INSERT INTO action_status (name) VALUES
-('Pending'),
-('Accepted'),
-('In Progress'),
-('Completed'),
-('Rejected');
+INSERT INTO public.action_type (name) VALUES 
+  ('submitted'), ('status_change'), ('comment'), ('assigned'), ('category_update');
 
-INSERT INTO action_type (name) VALUES
-('Status Update'),
-('Comment'),
-('Internal Note');
-
--- Insert dummy test users
-INSERT INTO "user" (email, password_hash, role, is_verified) VALUES
-('admin@civicconnect.test', 'dummy_hash', 'admin', true),
-('staff@civicconnect.test', 'dummy_hash', 'staff', true),
-('it_staff@civicconnect.test', 'dummy_hash', 'staff', true);
-
--- Assign staff user 2 to 'Roads & Transport' (Category 1)
--- Assign staff user 3 to 'IT support' (Category 4)
-INSERT INTO staff_category (user_id, category_id) VALUES 
-(2, 1),
-(3, 4);
+INSERT INTO public.category (name, target_days) VALUES 
+  ('Facility fault', 10), 
+  ('Equipment damage', 10), 
+  ('Security concern', 10), 
+  ('IT support', 10), 
+  ('Maintenance', 10), 
+  ('Lost property', 10), 
+  ('Other', 10);
