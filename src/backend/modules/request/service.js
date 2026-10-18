@@ -34,16 +34,29 @@ const getMyRequests = async (requesterId) => {
 };
 
 const submitRequest = async (requestData) => {
-  if (
-    !requestData.title ||
-    !requestData.description ||
-    !requestData.street_address ||
-    !requestData.category
-  ) {
+  // TC-012 Fix: Safely trim inputs and prevent blank spaces
+  const title = requestData.title?.trim();
+  const description = requestData.description?.trim();
+  const street_address = requestData.street_address?.trim();
+  const category = requestData.category?.trim();
+
+  if (!title || !description || !street_address || !category) {
     throw new Error("Missing mandatory fields");
   }
 
-  requestData.category_id = CATEGORY_MAP[requestData.category] || 1;
+  // TC-012 Fix: Reject unknown categories
+  const catKey = Object.keys(CATEGORY_MAP).find(
+    (k) => k.toLowerCase() === category.toLowerCase(),
+  );
+  if (!catKey) {
+    throw new Error("Invalid category");
+  }
+
+  requestData.title = title;
+  requestData.description = description;
+  requestData.street_address = street_address;
+  requestData.category_id = CATEGORY_MAP[catKey];
+
   return await requestRepo.createRequest(requestData);
 };
 
@@ -68,8 +81,6 @@ const updateRequestStatus = async (requestId, userId, updateData) => {
     new_status = currentStatus;
   }
 
-  // ULTRA-STRICT STATE MACHINE LOCK
-  // We removed the identical-state bypass. Every single update is evaluated.
   const cKey = currentStatus.toLowerCase().trim();
   const nKey = new_status.toLowerCase().trim();
 
@@ -77,7 +88,7 @@ const updateRequestStatus = async (requestId, userId, updateData) => {
     pending: ["accepted", "rejected", "cancelled"],
     accepted: ["in progress"],
     "in progress": ["completed", "pending"],
-    completed: ["closed", "in progress"], // "in progress" allows reopening
+    completed: ["closed", "in progress"],
     closed: [],
     rejected: [],
     cancelled: [],
@@ -85,7 +96,6 @@ const updateRequestStatus = async (requestId, userId, updateData) => {
 
   const allowed = validTransitions[cKey] || [];
 
-  // If the transition isn't explicitly mapped, throw the 409 Conflict error.
   if (!allowed.includes(nKey)) {
     const error = new Error(
       `Invalid transition from ${currentStatus} to ${new_status}`,

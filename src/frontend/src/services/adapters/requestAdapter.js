@@ -17,7 +17,28 @@ import { STATUS } from "../../domain/requestLifecycle";
 
 const toDate = (value) => {
   if (!value) return null;
-  const date = new Date(value);
+
+  let safeValue = value;
+
+  if (typeof safeValue === "string") {
+    safeValue = safeValue.trim();
+
+    // Catch Postgres DATE-only fields (YYYY-MM-DD) which default to midnight
+    if (safeValue.length === 10) {
+      // If the action happened today, force the time to "right now"
+      const today = new Date().toISOString().split("T")[0];
+      if (safeValue === today) return new Date();
+
+      // Otherwise, default older dates to noon UTC so they render safely
+      safeValue = `${safeValue}T12:00:00Z`;
+    }
+    // Fix standard timestamps missing the timezone suffix
+    else if (!safeValue.endsWith("Z") && safeValue.includes(" ")) {
+      safeValue = safeValue.replace(" ", "T") + "Z";
+    }
+  }
+
+  const date = new Date(safeValue);
   return Number.isNaN(date.getTime()) ? null : date;
 };
 

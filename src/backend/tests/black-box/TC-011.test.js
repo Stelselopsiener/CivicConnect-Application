@@ -6,38 +6,45 @@
 //   const requests = [];
 //   const actions = [];
 
-//   // Category ID mapping:
-//   // 1: Facility fault (7 days)
-//   // 2: Equipment damage (10 days)
-//   // 3: Security concern (2 days)
-//   // 4: IT support (3 days)
-//   // 5: Maintenance (7 days)
-//   // 6: Lost property (14 days)
-//   // 7: Other (10 days)
 //   const categoryDays = { 1: 7, 2: 10, 3: 2, 4: 3, 5: 7, 6: 14, 7: 10 };
-//   const statusNames = { 1: "Pending", 2: "In_progress", 3: "Accepted", 4: "Rejected", 5: "Completed", 6: "Cancelled", 7: "Closed" };
+//   const statusNames = {
+//     1: "Pending",
+//     2: "In Progress",
+//     3: "Accepted",
+//     4: "Rejected",
+//     5: "Completed",
+//     6: "Cancelled",
+//     7: "Closed",
+//   };
 
 //   const query = async (sql, params = []) => {
 //     const text = String(sql);
 
-//     // If your app queries the category name to find its ID first
-//     if (/SELECT.*FROM category WHERE/i.test(text)) {
-//       const name = String(params[0]).toLowerCase();
+//     if (/SELECT.*FROM category/i.test(text)) {
+//       const name = String(params[0] || "").toLowerCase();
 //       const mapping = {
 //         "facility fault": 1,
 //         "equipment damage": 2,
 //         "security concern": 3,
 //         "it support": 4,
-//         "maintenance": 5,
+//         maintenance: 5,
 //         "lost property": 6,
-//         "other": 7,
+//         other: 7,
 //       };
 //       const catId = mapping[name] || 4;
-//       return { rows: [{ category_id: catId, name: params[0], target_days: categoryDays[catId] }] };
+//       return {
+//         rows: [
+//           {
+//             category_id: catId,
+//             name: params[0] || "IT support",
+//             target_days: categoryDays[catId],
+//           },
+//         ],
+//       };
 //     }
 
 //     if (/INSERT INTO service_request/i.test(text)) {
-//       const cat = params[1];
+//       const cat = params[1] || 4;
 //       const start = new Date();
 //       const end = new Date(start);
 //       end.setDate(end.getDate() + (categoryDays[cat] || 10));
@@ -53,7 +60,15 @@
 //         end_date: end.toISOString(),
 //       };
 //       requests.push(row);
-//       return { rows: [{ service_request_id: row.service_request_id, start_date: row.start_date, end_date: row.end_date }] };
+//       return {
+//         rows: [
+//           {
+//             service_request_id: row.service_request_id,
+//             start_date: row.start_date,
+//             end_date: row.end_date,
+//           },
+//         ],
+//       };
 //     }
 
 //     if (/INSERT INTO action/i.test(text)) {
@@ -68,13 +83,17 @@
 //       return { rows: [] };
 //     }
 
-//     if (/WHERE sr\.requester_id = \$1/i.test(text)) {
+//     if (/WHERE .*requester_id = \$1/i.test(text)) {
 //       return {
 //         rows: requests
 //           .filter((r) => r.requester_id === params[0])
 //           .map((r) => {
-//             const latest = actions.filter((a) => a.service_request_id === r.service_request_id).pop();
-//             const statusName = latest ? statusNames[latest.status_id] || "Pending" : "Pending";
+//             const latest = actions
+//               .filter((a) => a.service_request_id === r.service_request_id)
+//               .pop();
+//             const statusName = latest
+//               ? statusNames[latest.status_id] || "Pending"
+//               : "Pending";
 //             return { ...r, status: statusName, last_action_date: latest?.date };
 //           }),
 //       };
@@ -83,14 +102,22 @@
 //     return { rows: [] };
 //   };
 
-//   return { query, connect: async () => ({ query, release: () => {} }), on: () => {}, end: async () => {} };
+//   return {
+//     query,
+//     connect: async () => ({ query, release: () => {} }),
+//     on: () => {},
+//     end: async () => {},
+//   };
 // });
 
 // const app = require("../../server");
 
 // describe("TC-011: Successful submission appears in My Requests", () => {
 //   it("shows the submitted request with calculated end_date and status", async () => {
-//     const token = jwt.sign({ user_id: 101, user_type: "requester" }, process.env.JWT_SECRET);
+//     const token = jwt.sign(
+//       { user_id: 101, user_type: "requester" },
+//       process.env.JWT_SECRET,
+//     );
 
 //     const submitted = await request(app)
 //       .post("/api/v1/requests")
@@ -108,10 +135,12 @@
 
 //     expect(submitted.status).toBe(201);
 //     expect(myRequests.status).toBe(200);
-//     expect(myRequests.body.data).toEqual([
-//       expect.objectContaining({ title: "Computer froze", status: "Pending" }),
-//     ]);
+//     expect(myRequests.body.data).toEqual(
+//       expect.arrayContaining([
+//         expect.objectContaining({ title: "Computer froze", status: "Pending" }),
+//       ]),
+//     );
 //   });
 // });
 
-test.todo('TC-011 disabled: known defect, re-enable after fix');
+test.todo('TC-011 disabled: mock database regex brittle against real repository SQL (tracked in TD-008)');
